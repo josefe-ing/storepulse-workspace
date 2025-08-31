@@ -1,0 +1,488 @@
+# StorePulse Monorepo CI/CD Pipeline
+# Intelligent path-based triggers to build only what changed
+
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+env:
+  PROJECT_ID: storepulse-prod
+  REGION: us-central1
+  REGISTRY: gcr.io
+
+jobs:
+  # Detect what changed to trigger appropriate jobs
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      api: ${{ steps.changes.outputs.api }}
+      gateway: ${{ steps.changes.outputs.gateway }}
+      pos-agent: ${{ steps.changes.outputs.pos-agent }}
+      functions: ${{ steps.changes.outputs.functions }}
+      client-dashboard: ${{ steps.changes.outputs.client-dashboard }}
+      admin-dashboard: ${{ steps.changes.outputs.admin-dashboard }}
+      infrastructure: ${{ steps.changes.outputs.infrastructure }}
+      docs: ${{ steps.changes.outputs.docs }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v2
+        id: changes
+        with:
+          filters: |
+            api:
+              - 'services/api/**'
+              - '.github/workflows/ci-cd.yml'
+            gateway:
+              - 'services/gateway/**'
+              - '.github/workflows/ci-cd.yml'
+            pos-agent:
+              - 'services/pos-agent/**'
+              - '.github/workflows/ci-cd.yml'
+            functions:
+              - 'services/functions/**'
+              - '.github/workflows/ci-cd.yml'
+            client-dashboard:
+              - 'frontend/client-dashboard/**'
+              - '.github/workflows/ci-cd.yml'
+            admin-dashboard:
+              - 'frontend/admin-dashboard/**'
+              - '.github/workflows/ci-cd.yml'
+            infrastructure:
+              - 'infrastructure/**'
+              - '.github/workflows/ci-cd.yml'
+            docs:
+              - 'docs/**'
+              - 'README.md'
+              - '.github/workflows/ci-cd.yml'
+
+  # API Service (Python FastAPI)
+  api-service:
+    needs: changes
+    if: ${{ needs.changes.outputs.api == 'true' }}
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./services/api
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+          
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          
+      - name: Lint with flake8
+        run: |
+          flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+          flake8 . --count --exit-zero --max-complexity=10 --max-line-length=88 --statistics
+          
+      - name: Type check with mypy
+        run: mypy . --ignore-missing-imports
+        
+      - name: Run tests
+        run: |
+          pytest tests/ --cov=. --cov-report=xml --cov-report=html
+          
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          file: ./services/api/coverage.xml
+          flags: api
+          
+      - name: Build Docker image
+        if: github.ref == 'refs/heads/main'
+        run: |
+          docker build -t $REGISTRY/$PROJECT_ID/storepulse-api:$GITHUB_SHA \
+                       -t $REGISTRY/$PROJECT_ID/storepulse-api:latest .
+                       
+      - name: Authenticate to Google Cloud
+        if: github.ref == 'refs/heads/main'
+        uses: google-github-actions/auth@v1
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+          
+      - name: Configure Docker for GCR
+        if: github.ref == 'refs/heads/main'
+        run: gcloud auth configure-docker
+        
+      - name: Push Docker image
+        if: github.ref == 'refs/heads/main'
+        run: |
+          docker push $REGISTRY/$PROJECT_ID/storepulse-api:$GITHUB_SHA
+          docker push $REGISTRY/$PROJECT_ID/storepulse-api:latest
+          
+      - name: Deploy to Cloud Run
+        if: github.ref == 'refs/heads/main'
+        run: |
+          gcloud run deploy storepulse-api \
+            --image $REGISTRY/$PROJECT_ID/storepulse-api:$GITHUB_SHA \
+            --region $REGION \
+            --platform managed \
+            --min-instances 1 \
+            --max-instances 5 \
+            --memory 1Gi \
+            --cpu 1 \
+            --set-env-vars PROJECT_ID=$PROJECT_ID \
+            --allow-unauthenticated
+
+  # Gateway Service (Python FastAPI)  
+  gateway-service:
+    needs: changes
+    if: ${{ needs.changes.outputs.gateway == 'true' }}
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./services/gateway
+        
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+          
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          
+      - name: Run tests
+        run: |
+          pytest tests/ --cov=. --cov-report=xml
+          
+      - name: Build Docker image
+        if: github.ref == 'refs/heads/main'
+        run: |
+          docker build -t $REGISTRY/$PROJECT_ID/storepulse-gateway:$GITHUB_SHA \
+                       -t $REGISTRY/$PROJECT_ID/storepulse-gateway:latest .
+                       
+      - name: Authenticate to Google Cloud
+        if: github.ref == 'refs/heads/main'
+        uses: google-github-actions/auth@v1
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+          
+      - name: Push Docker image
+        if: github.ref == 'refs/heads/main'
+        run: |
+          gcloud auth configure-docker
+          docker push $REGISTRY/$PROJECT_ID/storepulse-gateway:$GITHUB_SHA
+          docker push $REGISTRY/$PROJECT_ID/storepulse-gateway:latest
+
+  # POS Agent (Go)
+  pos-agent:
+    needs: changes
+    if: ${{ needs.changes.outputs.pos-agent == 'true' }}
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./services/pos-agent
+        
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.21'
+          cache-dependency-path: services/pos-agent/go.sum
+          
+      - name: Run tests
+        run: go test ./... -v -coverprofile=coverage.out
+        
+      - name: Build binaries
+        if: github.ref == 'refs/heads/main'
+        run: |
+          # Cross-compile for multiple platforms
+          GOOS=windows GOARCH=amd64 go build -o bin/storepulse-agent-windows-amd64.exe ./cmd/agent
+          GOOS=linux GOARCH=amd64 go build -o bin/storepulse-agent-linux-amd64 ./cmd/agent
+          GOOS=darwin GOARCH=amd64 go build -o bin/storepulse-agent-darwin-amd64 ./cmd/agent
+          
+      - name: Upload binaries as artifacts
+        if: github.ref == 'refs/heads/main'
+        uses: actions/upload-artifact@v3
+        with:
+          name: pos-agent-binaries
+          path: services/pos-agent/bin/
+
+  # Cloud Functions
+  functions:
+    needs: changes
+    if: ${{ needs.changes.outputs.functions == 'true' }}
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./services/functions
+        
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+          
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+        
+      - name: Run tests
+        run: pytest tests/ --cov=. --cov-report=xml
+        
+      - name: Authenticate to Google Cloud
+        if: github.ref == 'refs/heads/main'
+        uses: google-github-actions/auth@v1
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+          
+      - name: Deploy Cloud Functions
+        if: github.ref == 'refs/heads/main'
+        run: |
+          gcloud functions deploy process-metrics \
+            --gen2 \
+            --runtime python311 \
+            --trigger-topic metrics-queue \
+            --region $REGION \
+            --memory 512MB \
+            --timeout 60s \
+            --max-instances 10 \
+            --set-env-vars PROJECT_ID=$PROJECT_ID
+
+  # Client Dashboard (React)
+  client-dashboard:
+    needs: changes
+    if: ${{ needs.changes.outputs.client-dashboard == 'true' }}
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./frontend/client-dashboard
+        
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: frontend/client-dashboard/package-lock.json
+          
+      - name: Install dependencies
+        run: npm ci
+        
+      - name: Run linting
+        run: npm run lint
+        
+      - name: Run tests
+        run: npm run test -- --coverage --watchAll=false
+        
+      - name: Build application
+        run: npm run build
+        
+      - name: Deploy to Vercel
+        if: github.ref == 'refs/heads/main'
+        uses: amondnet/vercel-action@v25
+        with:
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+          working-directory: frontend/client-dashboard
+
+  # Admin Dashboard (React)
+  admin-dashboard:
+    needs: changes
+    if: ${{ needs.changes.outputs.admin-dashboard == 'true' }}
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./frontend/admin-dashboard
+        
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: frontend/admin-dashboard/package-lock.json
+          
+      - name: Install dependencies
+        run: npm ci
+        
+      - name: Run tests
+        run: npm run test -- --coverage --watchAll=false
+        
+      - name: Build application
+        run: npm run build
+        
+      - name: Build Docker image
+        if: github.ref == 'refs/heads/main'
+        run: |
+          docker build -t $REGISTRY/$PROJECT_ID/storepulse-admin:$GITHUB_SHA \
+                       -t $REGISTRY/$PROJECT_ID/storepulse-admin:latest .
+                       
+      - name: Deploy to Cloud Run
+        if: github.ref == 'refs/heads/main'
+        run: |
+          gcloud auth configure-docker
+          docker push $REGISTRY/$PROJECT_ID/storepulse-admin:$GITHUB_SHA
+          gcloud run deploy storepulse-admin \
+            --image $REGISTRY/$PROJECT_ID/storepulse-admin:$GITHUB_SHA \
+            --region $REGION \
+            --platform managed
+
+  # Infrastructure (Terraform)
+  infrastructure:
+    needs: changes
+    if: ${{ needs.changes.outputs.infrastructure == 'true' }}
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./infrastructure/terraform
+        
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: 1.6.0
+          
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v1
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+          
+      - name: Terraform Init
+        run: terraform init
+        
+      - name: Terraform Validate
+        run: terraform validate
+        
+      - name: Terraform Plan
+        run: terraform plan -out=tfplan
+        
+      - name: Terraform Apply
+        if: github.ref == 'refs/heads/main'
+        run: terraform apply -auto-approve tfplan
+
+  # Documentation
+  docs:
+    needs: changes
+    if: ${{ needs.changes.outputs.docs == 'true' }}
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+          
+      - name: Install MkDocs
+        run: |
+          pip install mkdocs mkdocs-material
+          
+      - name: Build documentation
+        run: mkdocs build
+        
+      - name: Deploy documentation
+        if: github.ref == 'refs/heads/main'
+        run: mkdocs gh-deploy --force
+
+  # Security Scanning
+  security:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+          
+      - name: Upload Trivy scan results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v2
+        if: always()
+        with:
+          sarif_file: 'trivy-results.sarif'
+
+  # Integration Tests (if any component changed)
+  integration-tests:
+    needs: [changes, api-service, gateway-service, functions]
+    if: |
+      always() && 
+      (needs.changes.outputs.api == 'true' || 
+       needs.changes.outputs.gateway == 'true' || 
+       needs.changes.outputs.functions == 'true')
+    runs-on: ubuntu-latest
+    
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: test_password
+          POSTGRES_DB: test_storepulse
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+          
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+          
+      - name: Install test dependencies
+        run: |
+          pip install -r services/api/requirements.txt
+          pip install pytest-integration
+          
+      - name: Run integration tests
+        run: |
+          pytest tests/integration/ --verbose
+        env:
+          DATABASE_URL: postgresql://postgres:test_password@localhost:5432/test_storepulse
+
+  # Notify on completion
+  notify:
+    needs: [api-service, gateway-service, pos-agent, functions, client-dashboard, admin-dashboard, infrastructure]
+    if: always() && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Notify deployment success
+        if: ${{ contains(needs.*.result, 'success') }}
+        run: |
+          echo "✅ Deployment completed successfully!"
+          echo "Services deployed: ${{ join(needs.*.outputs, ', ') }}"
+          
+      - name: Notify deployment failure
+        if: ${{ contains(needs.*.result, 'failure') }}
+        run: |
+          echo "❌ Deployment failed!"
+          echo "Failed jobs: ${{ join(needs.*.result, ', ') }}"
+          exit 1

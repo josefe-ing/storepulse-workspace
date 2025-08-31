@@ -1,0 +1,1133 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StorePulse - Admin Dashboard</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --primary-color: #2563eb;
+            --secondary-color: #64748b;
+            --success-color: #10b981;
+            --warning-color: #f59e0b;
+            --error-color: #ef4444;
+            --dark-bg: #1e293b;
+            --card-bg: #ffffff;
+            --border-color: #e2e8f0;
+        }
+
+        body {
+            background-color: #f8fafc;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+
+        .sidebar {
+            background: linear-gradient(135deg, var(--dark-bg), #334155);
+            min-height: 100vh;
+            padding: 0;
+            box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+        }
+
+        .sidebar .nav-link {
+            color: #94a3b8;
+            padding: 15px 20px;
+            border-radius: 0;
+            transition: all 0.3s ease;
+        }
+
+        .sidebar .nav-link:hover,
+        .sidebar .nav-link.active {
+            background-color: var(--primary-color);
+            color: white;
+            transform: translateX(5px);
+        }
+
+        .main-content {
+            padding: 30px;
+            min-height: 100vh;
+        }
+
+        .stats-card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            border-left: 4px solid var(--primary-color);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .stats-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+        }
+
+        .stats-number {
+            font-size: 2.5rem;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 8px;
+            animation: pulse 2s infinite;
+        }
+
+        .status-online { background-color: var(--success-color); }
+        .status-warning { background-color: var(--warning-color); }
+        .status-error { background-color: var(--error-color); }
+        .status-offline { background-color: #6b7280; }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 currentColor; }
+            50% { box-shadow: 0 0 0 8px rgba(255,255,255,0.3); }
+            100% { box-shadow: 0 0 0 0 rgba(255,255,255,0); }
+        }
+
+        .alert-card {
+            border-radius: 12px;
+            border: none;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+            margin-bottom: 15px;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        .alert-critical {
+            border-left: 5px solid var(--error-color);
+            background: linear-gradient(90deg, rgba(239,68,68,0.05), rgba(255,255,255,1));
+        }
+
+        .alert-warning {
+            border-left: 5px solid var(--warning-color);
+            background: linear-gradient(90deg, rgba(245,158,11,0.05), rgba(255,255,255,1));
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .sensor-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .sensor-card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            transition: all 0.3s ease;
+        }
+
+        .sensor-card:hover {
+            transform: scale(1.02);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+        }
+
+        .progress-ring {
+            width: 60px;
+            height: 60px;
+            transform: rotate(-90deg);
+        }
+
+        .progress-circle {
+            fill: transparent;
+            stroke: #e5e7eb;
+            stroke-width: 6;
+        }
+
+        .progress-circle.progress {
+            stroke: var(--success-color);
+            stroke-dasharray: 157;
+            stroke-dashoffset: calc(157 - 157 * var(--progress) / 100);
+            transition: stroke-dashoffset 0.3s ease;
+        }
+
+        .btn-action {
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+
+        .btn-restart {
+            background: var(--primary-color);
+            border: none;
+            color: white;
+        }
+
+        .btn-restart:hover {
+            background: #1d4ed8;
+            transform: translateY(-1px);
+        }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid #ffffff;
+            border-radius: 50%;
+            border-top-color: transparent;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .tenant-selector {
+            background: var(--card-bg);
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            padding: 10px 15px;
+            font-weight: 500;
+            color: var(--dark-bg);
+        }
+
+        .nav-tabs {
+            border-bottom: 2px solid var(--border-color);
+            margin-bottom: 30px;
+        }
+
+        .nav-tabs .nav-link {
+            border: none;
+            color: var(--secondary-color);
+            font-weight: 500;
+            padding: 12px 20px;
+            border-radius: 0;
+        }
+
+        .nav-tabs .nav-link.active {
+            color: var(--primary-color);
+            border-bottom: 3px solid var(--primary-color);
+            background: none;
+        }
+
+        .real-time-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--success-color);
+            font-weight: 500;
+            font-size: 0.875rem;
+        }
+
+        .pulse-dot {
+            width: 8px;
+            height: 8px;
+            background: var(--success-color);
+            border-radius: 50%;
+            animation: pulse-dot 1.5s infinite;
+        }
+
+        @keyframes pulse-dot {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Sidebar -->
+            <div class="col-md-3 col-lg-2 sidebar">
+                <div class="p-3">
+                    <h4 class="text-white mb-4">
+                        <i class="fas fa-pulse me-2"></i>StorePulse Admin
+                    </h4>
+                    <nav class="nav flex-column">
+                        <a class="nav-link active" href="#" onclick="showTab('overview')">
+                            <i class="fas fa-tachometer-alt me-2"></i>Dashboard
+                        </a>
+                        <a class="nav-link" href="#" onclick="showTab('agents')">
+                            <i class="fas fa-robot me-2"></i>Agents
+                        </a>
+                        <a class="nav-link" href="#" onclick="showTab('sensors')">
+                            <i class="fas fa-thermometer-half me-2"></i>Sensores
+                        </a>
+                        <a class="nav-link" href="#" onclick="showTab('sync')">
+                            <i class="fas fa-sync me-2"></i>Sincronización
+                        </a>
+                        <a class="nav-link" href="#" onclick="showTab('alerts')">
+                            <i class="fas fa-exclamation-triangle me-2"></i>Alertas
+                            <span class="badge bg-danger ms-2" id="alertCount">3</span>
+                        </a>
+                        <a class="nav-link" href="#" onclick="showTab('logs')">
+                            <i class="fas fa-file-alt me-2"></i>Logs
+                        </a>
+                    </nav>
+                </div>
+            </div>
+
+            <!-- Main Content -->
+            <div class="col-md-9 col-lg-10 main-content">
+                <!-- Header -->
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <div>
+                        <h2 class="mb-1">Control Center</h2>
+                        <div class="real-time-indicator">
+                            <div class="pulse-dot"></div>
+                            Datos en tiempo real
+                        </div>
+                    </div>
+                    <div class="d-flex gap-3 align-items-center">
+                        <select class="form-select tenant-selector" id="tenantSelector" onchange="switchTenant()">
+                            <option value="all">Todos los Clientes</option>
+                            <option value="CLIENT-A" selected>Retail Chain A</option>
+                            <option value="CLIENT-B">Supermarket B</option>
+                            <option value="CLIENT-C">Electronics Store C</option>
+                        </select>
+                        <span class="text-muted">Última actualización: <span id="lastUpdate">hace 2s</span></span>
+                    </div>
+                </div>
+
+                <!-- Overview Tab -->
+                <div id="overview" class="tab-content active">
+                    <!-- Stats Cards -->
+                    <div class="row mb-4">
+                        <div class="col-md-3">
+                            <div class="stats-card" style="border-left-color: var(--success-color);">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <div class="text-muted">Agents Online</div>
+                                        <div class="stats-number text-success">24</div>
+                                        <small class="text-success">+2 desde ayer</small>
+                                    </div>
+                                    <i class="fas fa-robot fa-2x text-success opacity-50"></i>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="stats-card" style="border-left-color: var(--primary-color);">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <div class="text-muted">Sensores Activos</div>
+                                        <div class="stats-number text-primary">147</div>
+                                        <small class="text-muted">3 stores</small>
+                                    </div>
+                                    <i class="fas fa-thermometer-half fa-2x text-primary opacity-50"></i>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="stats-card" style="border-left-color: var(--warning-color);">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <div class="text-muted">Alertas Activas</div>
+                                        <div class="stats-number text-warning">3</div>
+                                        <small class="text-warning">2 críticas</small>
+                                    </div>
+                                    <i class="fas fa-exclamation-triangle fa-2x text-warning opacity-50"></i>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="stats-card" style="border-left-color: var(--success-color);">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <div class="text-muted">Sync Success Rate</div>
+                                        <div class="stats-number text-success">98.7%</div>
+                                        <small class="text-success">Último 24h</small>
+                                    </div>
+                                    <i class="fas fa-sync fa-2x text-success opacity-50"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Recent Alerts -->
+                    <div class="row">
+                        <div class="col-lg-8">
+                            <div class="card">
+                                <div class="card-header d-flex justify-content-between align-items-center">
+                                    <h5 class="mb-0">
+                                        <i class="fas fa-exclamation-circle me-2"></i>Alertas Recientes
+                                    </h5>
+                                    <span class="badge bg-danger">3 Activas</span>
+                                </div>
+                                <div class="card-body p-0">
+                                    <div class="alert alert-card alert-critical">
+                                        <div class="d-flex justify-content-between align-items-start">
+                                            <div class="flex-grow-1">
+                                                <h6 class="alert-heading mb-1">
+                                                    <span class="status-indicator status-error"></span>
+                                                    Sensor Silent Alert - CRÍTICO
+                                                </h6>
+                                                <p class="mb-2">Sensor TEMP-A1-01 ha estado silencioso por 15 minutos</p>
+                                                <small class="text-muted">
+                                                    <strong>Cliente:</strong> Retail Chain A |
+                                                    <strong>Ubicación:</strong> Store A1 |
+                                                    <strong>Última señal:</strong> 14:23:45
+                                                </small>
+                                            </div>
+                                            <div class="d-flex gap-2">
+                                                <button class="btn btn-action btn-restart" onclick="restartSensor('TEMP-A1-01')">
+                                                    <i class="fas fa-power-off me-1"></i>Reiniciar
+                                                </button>
+                                                <button class="btn btn-outline-secondary btn-action" onclick="acknowledgeAlert('alert-001')">
+                                                    <i class="fas fa-check me-1"></i>Confirmar
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="alert alert-card alert-warning">
+                                        <div class="d-flex justify-content-between align-items-start">
+                                            <div class="flex-grow-1">
+                                                <h6 class="alert-heading mb-1">
+                                                    <span class="status-indicator status-warning"></span>
+                                                    Sync Delay Warning
+                                                </h6>
+                                                <p class="mb-2">Agent AG-B1 tiene retraso en sincronización (8 minutos)</p>
+                                                <small class="text-muted">
+                                                    <strong>Cliente:</strong> Supermarket B |
+                                                    <strong>Buffer:</strong> 245 eventos pendientes
+                                                </small>
+                                            </div>
+                                            <div class="d-flex gap-2">
+                                                <button class="btn btn-action btn-restart" onclick="forceSyncAgent('AG-B1')">
+                                                    <i class="fas fa-sync me-1"></i>Sync Manual
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="alert alert-card alert-warning">
+                                        <div class="d-flex justify-content-between align-items-start">
+                                            <div class="flex-grow-1">
+                                                <h6 class="alert-heading mb-1">
+                                                    <span class="status-indicator status-warning"></span>
+                                                    High CPU Usage
+                                                </h6>
+                                                <p class="mb-2">Agent AG-A1 reporta uso de CPU al 87%</p>
+                                                <small class="text-muted">
+                                                    <strong>Cliente:</strong> Retail Chain A |
+                                                    <strong>Memoria:</strong> 4.2GB / 8GB
+                                                </small>
+                                            </div>
+                                            <div class="d-flex gap-2">
+                                                <button class="btn btn-action btn-restart" onclick="restartAgent('AG-A1')">
+                                                    <i class="fas fa-redo me-1"></i>Reiniciar
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-lg-4">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5 class="mb-0">
+                                        <i class="fas fa-chart-line me-2"></i>Métricas en Tiempo Real
+                                    </h5>
+                                </div>
+                                <div class="card-body">
+                                    <canvas id="metricsChart" width="400" height="200"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Agents Tab -->
+                <div id="agents" class="tab-content">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h4><i class="fas fa-robot me-2"></i>Gestión de Agents</h4>
+                        <div class="d-flex gap-2">
+                            <button class="btn btn-outline-primary">
+                                <i class="fas fa-sync me-1"></i>Refresh All
+                            </button>
+                            <button class="btn btn-success">
+                                <i class="fas fa-plus me-1"></i>Agregar Agent
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="sensor-grid">
+                        <!-- Agent Card 1 -->
+                        <div class="sensor-card">
+                            <div class="d-flex justify-content-between align-items-start mb-3">
+                                <div>
+                                    <h6 class="mb-1">
+                                        <span class="status-indicator status-online"></span>
+                                        Agent AG-A1
+                                    </h6>
+                                    <small class="text-muted">Retail Chain A - Store A1</small>
+                                </div>
+                                <span class="badge bg-success">Online</span>
+                            </div>
+                            
+                            <div class="row mb-3">
+                                <div class="col-6">
+                                    <div class="d-flex align-items-center">
+                                        <svg class="progress-ring me-2" style="--progress: 87">
+                                            <circle class="progress-circle" cx="30" cy="30" r="25"></circle>
+                                            <circle class="progress-circle progress" cx="30" cy="30" r="25"></circle>
+                                        </svg>
+                                        <div>
+                                            <div class="fw-bold text-warning">87%</div>
+                                            <small class="text-muted">CPU</small>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="d-flex align-items-center">
+                                        <svg class="progress-ring me-2" style="--progress: 52">
+                                            <circle class="progress-circle" cx="30" cy="30" r="25"></circle>
+                                            <circle class="progress-circle progress" cx="30" cy="30" r="25"></circle>
+                                        </svg>
+                                        <div>
+                                            <div class="fw-bold text-success">52%</div>
+                                            <small class="text-muted">RAM</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <div class="d-flex justify-content-between mb-1">
+                                    <small>POS Collector</small>
+                                    <span class="badge bg-success">Running</span>
+                                </div>
+                                <div class="d-flex justify-content-between mb-1">
+                                    <small>Sensor Collector</small>
+                                    <span class="badge bg-success">Running</span>
+                                </div>
+                                <div class="d-flex justify-content-between">
+                                    <small>Sync Manager</small>
+                                    <span class="badge bg-warning">Retrying</span>
+                                </div>
+                            </div>
+
+                            <div class="d-flex gap-2">
+                                <button class="btn btn-action btn-restart flex-fill" onclick="restartAgent('AG-A1')">
+                                    <i class="fas fa-redo me-1"></i>Reiniciar
+                                </button>
+                                <button class="btn btn-outline-secondary btn-action" onclick="viewAgentLogs('AG-A1')">
+                                    <i class="fas fa-file-alt me-1"></i>Logs
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Agent Card 2 -->
+                        <div class="sensor-card">
+                            <div class="d-flex justify-content-between align-items-start mb-3">
+                                <div>
+                                    <h6 class="mb-1">
+                                        <span class="status-indicator status-online"></span>
+                                        Agent AG-B1
+                                    </h6>
+                                    <small class="text-muted">Supermarket B - Store B1</small>
+                                </div>
+                                <span class="badge bg-success">Online</span>
+                            </div>
+                            
+                            <div class="row mb-3">
+                                <div class="col-6">
+                                    <div class="d-flex align-items-center">
+                                        <svg class="progress-ring me-2" style="--progress: 34">
+                                            <circle class="progress-circle" cx="30" cy="30" r="25"></circle>
+                                            <circle class="progress-circle progress" cx="30" cy="30" r="25"></circle>
+                                        </svg>
+                                        <div>
+                                            <div class="fw-bold text-success">34%</div>
+                                            <small class="text-muted">CPU</small>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="d-flex align-items-center">
+                                        <svg class="progress-ring me-2" style="--progress: 28">
+                                            <circle class="progress-circle" cx="30" cy="30" r="25"></circle>
+                                            <circle class="progress-circle progress" cx="30" cy="30" r="25"></circle>
+                                        </svg>
+                                        <div>
+                                            <div class="fw-bold text-success">28%</div>
+                                            <small class="text-muted">RAM</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <div class="d-flex justify-content-between mb-1">
+                                    <small>POS Collector</small>
+                                    <span class="badge bg-success">Running</span>
+                                </div>
+                                <div class="d-flex justify-content-between mb-1">
+                                    <small>Sensor Collector</small>
+                                    <span class="badge bg-success">Running</span>
+                                </div>
+                                <div class="d-flex justify-content-between">
+                                    <small>Sync Manager</small>
+                                    <span class="badge bg-warning">Sync Delay</span>
+                                </div>
+                            </div>
+
+                            <div class="d-flex gap-2">
+                                <button class="btn btn-action btn-restart flex-fill" onclick="forceSyncAgent('AG-B1')">
+                                    <i class="fas fa-sync me-1"></i>Force Sync
+                                </button>
+                                <button class="btn btn-outline-secondary btn-action" onclick="viewAgentLogs('AG-B1')">
+                                    <i class="fas fa-file-alt me-1"></i>Logs
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Agent Card 3 - Offline -->
+                        <div class="sensor-card border-danger">
+                            <div class="d-flex justify-content-between align-items-start mb-3">
+                                <div>
+                                    <h6 class="mb-1">
+                                        <span class="status-indicator status-offline"></span>
+                                        Agent AG-C1
+                                    </h6>
+                                    <small class="text-muted">Electronics Store C - Store C1</small>
+                                </div>
+                                <span class="badge bg-danger">Offline</span>
+                            </div>
+                            
+                            <div class="text-center py-3 mb-3">
+                                <i class="fas fa-exclamation-triangle fa-2x text-danger mb-2"></i>
+                                <div class="text-danger fw-bold">Agent Desconectado</div>
+                                <small class="text-muted">Última conexión: hace 23 min</small>
+                            </div>
+
+                            <div class="d-flex gap-2">
+                                <button class="btn btn-danger flex-fill" onclick="restartAgent('AG-C1')">
+                                    <i class="fas fa-power-off me-1"></i>Restart
+                                </button>
+                                <button class="btn btn-outline-secondary btn-action" onclick="checkAgentConnection('AG-C1')">
+                                    <i class="fas fa-search me-1"></i>Diagnóstico
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sensors Tab -->
+                <div id="sensors" class="tab-content">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h4><i class="fas fa-thermometer-half me-2"></i>Monitoreo de Sensores</h4>
+                        <div class="d-flex gap-2">
+                            <select class="form-select" style="width: auto;">
+                                <option>Todos los tipos</option>
+                                <option>Temperatura</option>
+                                <option>Puerta</option>
+                                <option>Movimiento</option>
+                                <option>Energía</option>
+                            </select>
+                            <button class="btn btn-outline-primary">
+                                <i class="fas fa-sync me-1"></i>Actualizar
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="row mb-4">
+                        <div class="col-md-3">
+                            <div class="stats-card text-center" style="border-left-color: var(--success-color);">
+                                <div class="stats-number text-success">144</div>
+                                <div class="text-muted">Activos</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="stats-card text-center" style="border-left-color: var(--warning-color);">
+                                <div class="stats-number text-warning">2</div>
+                                <div class="text-muted">Advertencia</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="stats-card text-center" style="border-left-color: var(--error-color);">
+                                <div class="stats-number text-danger">1</div>
+                                <div class="text-muted">Error</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="stats-card text-center" style="border-left-color: var(--secondary-color);">
+                                <div class="stats-number text-secondary">0</div>
+                                <div class="text-muted">Offline</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="sensor-grid">
+                        <!-- Sensor Silencioso (Crítico) -->
+                        <div class="sensor-card border-danger">
+                            <div class="d-flex justify-content-between align-items-start mb-3">
+                                <div>
+                                    <h6 class="mb-1">
+                                        <span class="status-indicator status-error"></span>
+                                        TEMP-A1-01
+                                    </h6>
+                                    <small class="text-muted">Temperatura - Retail Chain A</small>
+                                </div>
+                                <span class="badge bg-danger">SILENCIOSO</span>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <div class="d-flex justify-content-between mb-1">
+                                    <small>Última lectura:</small>
+                                    <strong class="text-danger">hace 15 min</strong>
+                                </div>
+                                <div class="d-flex justify-content-between mb-1">
+                                    <small>Valor anterior:</small>
+                                    <span>4.2°C</span>
+                                </div>
+                                <div class="d-flex justify-content-between">
+                                    <small>Nivel batería:</small>
+                                    <span class="text-warning">23%</span>
+                                </div>
+                            </div>
+
+                            <div class="alert alert-danger py-2 px-3 mb-3">
+                                <small>
+                                    <i class="fas fa-exclamation-triangle me-1"></i>
+                                    Sensor no responde. Posible fallo de batería o conectividad.
+                                </small>
+                            </div>
+
+                            <div class="d-flex gap-2">
+                                <button class="btn btn-danger flex-fill" onclick="restartSensor('TEMP-A1-01')">
+                                    <span class="loading-spinner me-1" style="display: none;"></span>
+                                    <i class="fas fa-power-off me-1"></i>Reiniciar
+                                </button>
+                                <button class="btn btn-outline-secondary btn-action" onclick="testSensorConnection('TEMP-A1-01')">
+                                    <i class="fas fa-wifi me-1"></i>Test
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Sensor Normal -->
+                        <div class="sensor-card">
+                            <div class="d-flex justify-content-between align-items-start mb-3">
+                                <div>
+                                    <h6 class="mb-1">
+                                        <span class="status-indicator status-online"></span>
+                                        TEMP-A1-02
+                                    </h6>
+                                    <small class="text-muted">Temperatura - Retail Chain A</small>
+                                </div>
+                                <span class="badge bg-success">ACTIVO</span>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <div class="d-flex justify-content-between mb-1">
+                                    <small>Última lectura:</small>
+                                    <strong class="text-success">hace 2 min</strong>
+                                </div>
+                                <div class="d-flex justify-content-between mb-1">
+                                    <small>Temperatura actual:</small>
+                                    <span class="fw-bold">3.8°C</span>
+                                </div>
+                                <div class="d-flex justify-content-between">
+                                    <small>Nivel batería:</small>
+                                    <span class="text-success">87%</span>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <canvas id="tempChart1" width="200" height="100"></canvas>
+                            </div>
+
+                            <div class="d-flex gap-2">
+                                <button class="btn btn-outline-primary flex-fill" onclick="configSensor('TEMP-A1-02')">
+                                    <i class="fas fa-cog me-1"></i>Configurar
+                                </button>
+                                <button class="btn btn-outline-secondary btn-action" onclick="viewSensorHistory('TEMP-A1-02')">
+                                    <i class="fas fa-chart-line me-1"></i>Histórico
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Sensor con Advertencia -->
+                        <div class="sensor-card border-warning">
+                            <div class="d-flex justify-content-between align-items-start mb-3">
+                                <div>
+                                    <h6 class="mb-1">
+                                        <span class="status-indicator status-warning"></span>
+                                        DOOR-B1-01
+                                    </h6>
+                                    <small class="text-muted">Puerta - Supermarket B</small>
+                                </div>
+                                <span class="badge bg-warning">ADVERTENCIA</span>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <div class="d-flex justify-content-between mb-1">
+                                    <small>Última lectura:</small>
+                                    <strong class="text-success">hace 1 min</strong>
+                                </div>
+                                <div class="d-flex justify-content-between mb-1">
+                                    <small>Estado puerta:</small>
+                                    <span class="text-success">Cerrada</span>
+                                </div>
+                                <div class="d-flex justify-content-between">
+                                    <small>Nivel batería:</small>
+                                    <span class="text-warning">18%</span>
+                                </div>
+                            </div>
+
+                            <div class="alert alert-warning py-2 px-3 mb-3">
+                                <small>
+                                    <i class="fas fa-battery-quarter me-1"></i>
+                                    Batería baja. Programar reemplazo pronto.
+                                </small>
+                            </div>
+
+                            <div class="d-flex gap-2">
+                                <button class="btn btn-warning flex-fill" onclick="scheduleMaintenance('DOOR-B1-01')">
+                                    <i class="fas fa-calendar me-1"></i>Mantto.
+                                </button>
+                                <button class="btn btn-outline-secondary btn-action" onclick="testSensorConnection('DOOR-B1-01')">
+                                    <i class="fas fa-tools me-1"></i>Test
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sync Tab -->
+                <div id="sync" class="tab-content">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h4><i class="fas fa-sync me-2"></i>Centro de Sincronización</h4>
+                        <div class="d-flex gap-2">
+                            <button class="btn btn-primary" onclick="forceFullSync()">
+                                <i class="fas fa-sync me-1"></i>Sync Completo
+                            </button>
+                            <button class="btn btn-outline-primary">
+                                <i class="fas fa-history me-1"></i>Historial
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Sync Queue -->
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h6 class="mb-0">
+                                <i class="fas fa-list me-2"></i>Cola de Sincronización
+                                <span class="badge bg-primary ms-2">2 en proceso</span>
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <!-- Sync en proceso -->
+                            <div class="d-flex justify-content-between align-items-center mb-3 p-3 bg-light rounded">
+                                <div class="flex-grow-1">
+                                    <h6 class="mb-1">
+                                        <span class="status-indicator status-warning"></span>
+                                        Sync AG-B1 - Sensor Data
+                                    </h6>
+                                    <div class="progress mb-2" style="height: 8px;">
+                                        <div class="progress-bar bg-primary" role="progressbar" style="width: 65%"></div>
+                                    </div>
+                                    <small class="text-muted">158 / 245 registros sincronizados</small>
+                                </div>
+                                <div class="text-end">
+                                    <div class="text-muted small">Iniciado: 14:45:12</div>
+                                    <div class="text-primary fw-bold">65%</div>
+                                </div>
+                            </div>
+
+                            <!-- Sync pendiente -->
+                            <div class="d-flex justify-content-between align-items-center mb-3 p-3 bg-light rounded">
+                                <div class="flex-grow-1">
+                                    <h6 class="mb-1">
+                                        <span class="status-indicator status-online"></span>
+                                        Sync AG-A1 - POS Data
+                                    </h6>
+                                    <div class="progress mb-2" style="height: 8px;">
+                                        <div class="progress-bar bg-success" role="progressbar" style="width: 12%"></div>
+                                    </div>
+                                    <small class="text-muted">23 / 187 registros sincronizados</small>
+                                </div>
+                                <div class="text-end">
+                                    <div class="text-muted small">Iniciado: 14:47:33</div>
+                                    <div class="text-success fw-bold">12%</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Failed Syncs -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h6 class="mb-0">
+                                <i class="fas fa-exclamation-triangle me-2 text-danger"></i>Sincronizaciones Fallidas
+                                <span class="badge bg-danger ms-2">1</span>
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="alert alert-danger">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div class="flex-grow-1">
+                                        <h6 class="alert-heading mb-1">Sync AG-C1 - Full Sync Failed</h6>
+                                        <p class="mb-2">Error: Connection timeout after 30 seconds</p>
+                                        <small class="text-muted">
+                                            Último intento: hace 5 min | Reintentos: 3/5 | Próximo intento: en 2 min
+                                        </small>
+                                    </div>
+                                    <div class="d-flex gap-2">
+                                        <button class="btn btn-danger btn-sm" onclick="retrySyncNow('sync-001')">
+                                            <i class="fas fa-redo me-1"></i>Reintentar
+                                        </button>
+                                        <button class="btn btn-outline-secondary btn-sm" onclick="cancelSync('sync-001')">
+                                            <i class="fas fa-times me-1"></i>Cancelar
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Other tabs would go here -->
+                <div id="alerts" class="tab-content">
+                    <h4>Centro de Alertas</h4>
+                    <p class="text-muted">Panel completo de alertas y notificaciones...</p>
+                </div>
+                
+                <div id="logs" class="tab-content">
+                    <h4>Visor de Logs</h4>
+                    <p class="text-muted">Logs en tiempo real del sistema...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Tab Management
+        function showTab(tabName) {
+            // Hide all tabs
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.style.display = 'none';
+            });
+            
+            // Show selected tab
+            document.getElementById(tabName).style.display = 'block';
+            
+            // Update nav links
+            document.querySelectorAll('.nav-link').forEach(link => {
+                link.classList.remove('active');
+            });
+            event.target.classList.add('active');
+        }
+
+        // Initialize first tab
+        document.addEventListener('DOMContentLoaded', function() {
+            showTab('overview');
+            initCharts();
+            startRealTimeUpdates();
+        });
+
+        // Sensor Actions
+        function restartSensor(sensorId) {
+            const button = event.target;
+            const spinner = button.querySelector('.loading-spinner');
+            const icon = button.querySelector('.fas');
+            
+            // Show loading state
+            if (spinner) spinner.style.display = 'inline-block';
+            if (icon) icon.style.display = 'none';
+            button.disabled = true;
+            
+            // Simulate API call
+            setTimeout(() => {
+                if (spinner) spinner.style.display = 'none';
+                if (icon) icon.style.display = 'inline';
+                button.disabled = false;
+                
+                showToast(`Comando de reinicio enviado a ${sensorId}`, 'success');
+            }, 2000);
+        }
+
+        function restartAgent(agentId) {
+            showToast(`Reiniciando agent ${agentId}...`, 'info');
+            // Simulate restart
+            setTimeout(() => {
+                showToast(`Agent ${agentId} reiniciado exitosamente`, 'success');
+            }, 3000);
+        }
+
+        function forceSyncAgent(agentId) {
+            showToast(`Iniciando sincronización forzada para ${agentId}`, 'info');
+        }
+
+        function acknowledgeAlert(alertId) {
+            event.target.closest('.alert').style.opacity = '0.5';
+            showToast('Alerta confirmada', 'success');
+        }
+
+        // Toast notifications
+        function showToast(message, type = 'info') {
+            const toastContainer = getOrCreateToastContainer();
+            
+            const toast = document.createElement('div');
+            toast.className = `toast align-items-center text-white bg-${type === 'success' ? 'success' : type === 'error' ? 'danger' : 'primary'} border-0`;
+            toast.setAttribute('role', 'alert');
+            toast.innerHTML = `
+                <div class="d-flex">
+                    <div class="toast-body">${message}</div>
+                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+                </div>
+            `;
+            
+            toastContainer.appendChild(toast);
+            
+            const bsToast = new bootstrap.Toast(toast);
+            bsToast.show();
+            
+            // Auto remove after hiding
+            toast.addEventListener('hidden.bs.toast', () => {
+                toast.remove();
+            });
+        }
+
+        function getOrCreateToastContainer() {
+            let container = document.querySelector('.toast-container');
+            if (!container) {
+                container = document.createElement('div');
+                container.className = 'toast-container position-fixed top-0 end-0 p-3';
+                container.style.zIndex = '1050';
+                document.body.appendChild(container);
+            }
+            return container;
+        }
+
+        // Charts initialization
+        function initCharts() {
+            const ctx = document.getElementById('metricsChart');
+            if (ctx) {
+                new Chart(ctx.getContext('2d'), {
+                    type: 'line',
+                    data: {
+                        labels: ['14:40', '14:42', '14:44', '14:46', '14:48', '14:50'],
+                        datasets: [{
+                            label: 'Agents Online',
+                            data: [24, 24, 23, 24, 24, 24],
+                            borderColor: '#2563eb',
+                            tension: 0.4,
+                            fill: true,
+                            backgroundColor: 'rgba(37, 99, 235, 0.1)'
+                        }, {
+                            label: 'Sync Success Rate',
+                            data: [98, 97, 98, 99, 98, 99],
+                            borderColor: '#10b981',
+                            tension: 0.4
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'bottom'
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                grid: {
+                                    color: '#f1f5f9'
+                                }
+                            },
+                            x: {
+                                grid: {
+                                    color: '#f1f5f9'
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+        }
+
+        // Real-time updates
+        function startRealTimeUpdates() {
+            // Update timestamp
+            setInterval(() => {
+                const now = new Date();
+                const seconds = Math.floor((now.getTime() - Date.now() + 2000) / 1000);
+                document.getElementById('lastUpdate').textContent = `hace ${Math.abs(seconds)}s`;
+            }, 1000);
+
+            // Simulate real-time data updates
+            setInterval(() => {
+                // Random chance to trigger new alert
+                if (Math.random() < 0.1) {
+                    simulateNewAlert();
+                }
+            }, 10000);
+        }
+
+        function simulateNewAlert() {
+            // This would be replaced with WebSocket connection in production
+            showToast('Nueva alerta: Sensor MOTION-C1-03 ha dejado de reportar', 'warning');
+            
+            // Update alert count
+            const alertCount = document.getElementById('alertCount');
+            if (alertCount) {
+                alertCount.textContent = parseInt(alertCount.textContent) + 1;
+            }
+        }
+
+        function switchTenant() {
+            const selector = document.getElementById('tenantSelector');
+            const selectedTenant = selector.value;
+            showToast(`Cambiando vista a: ${selector.options[selector.selectedIndex].text}`, 'info');
+            
+            // Here you would update all dashboard data based on selected tenant
+            // This is just a simulation
+        }
+
+        // Additional utility functions
+        function forceFullSync() {
+            showToast('Iniciando sincronización completa de todos los agents...', 'info');
+        }
+
+        function testSensorConnection(sensorId) {
+            showToast(`Ejecutando test de conectividad para ${sensorId}`, 'info');
+        }
+
+        function viewAgentLogs(agentId) {
+            showToast(`Abriendo logs para agent ${agentId}`, 'info');
+        }
+
+        function scheduleMaintenance(sensorId) {
+            showToast(`Programando mantenimiento para ${sensorId}`, 'success');
+        }
+
+        function configSensor(sensorId) {
+            showToast(`Abriendo configuración para ${sensorId}`, 'info');
+        }
+
+        function viewSensorHistory(sensorId) {
+            showToast(`Cargando histórico para ${sensorId}`, 'info');
+        }
+
+        function retrySyncNow(syncId) {
+            showToast('Reintentando sincronización...', 'info');
+        }
+
+        function cancelSync(syncId) {
+            showToast('Sincronización cancelada', 'warning');
+        }
+
+        function checkAgentConnection(agentId) {
+            showToast(`Ejecutando diagnóstico de conectividad para ${agentId}`, 'info');
+        }
+    </script>
+</body>
+</html>

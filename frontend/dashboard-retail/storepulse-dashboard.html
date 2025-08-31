@@ -1,0 +1,3907 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StorePulse - Dashboard de Monitoreo</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        :root {
+            /* Professional Color Palette - Material Design 3 inspired */
+            --primary: #1565C0;
+            --primary-light: #1976D2;
+            --primary-dark: #0D47A1;
+            --secondary: #37474F;
+            --accent: #00838F;
+            
+            /* Status Colors */
+            --success: #00C853;
+            --success-light: #00E676;
+            --success-bg: rgba(0, 200, 83, 0.15);
+            --warning: #FF6D00;
+            --warning-light: #FF8F00;
+            --warning-bg: rgba(255, 109, 0, 0.15);
+            --danger: #D50000;
+            --danger-light: #FF1744;
+            --danger-bg: rgba(213, 0, 0, 0.15);
+            --info: #1565C0;
+            --info-light: #2196F3;
+            
+            /* Neutral Grays */
+            --gray-50: #FAFAFA;
+            --gray-100: #F5F5F5;
+            --gray-200: #EEEEEE;
+            --gray-300: #E0E0E0;
+            --gray-400: #BDBDBD;
+            --gray-500: #9E9E9E;
+            --gray-600: #757575;
+            --gray-700: #616161;
+            --gray-800: #424242;
+            --gray-900: #212121;
+            
+            /* Surface & Background */
+            --surface: #FFFFFF;
+            --background: #FAFAFA;
+            --surface-variant: #F5F5F5;
+            
+            /* Text */
+            --text-primary: #212121;
+            --text-secondary: #616161;
+            --text-disabled: #9E9E9E;
+            --text-on-primary: #FFFFFF;
+            
+            /* Legacy variables for compatibility */
+            --dark: #212121;
+            --gray: #757575;
+            --light: #FAFAFA;
+            --white: #FFFFFF;
+            
+            /* Professional Shadows */
+            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary) 50%, var(--primary-light) 100%);
+            min-height: 100vh;
+            font-weight: 400;
+            line-height: 1.5;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+        
+        /* Header */
+        .header {
+            background: var(--dark);
+            color: white;
+            padding: 1rem 2rem;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        
+        .logo-icon {
+            width: 50px;
+            height: 50px;
+            background: white;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            padding: 5px;
+        }
+        
+        .logo h1 {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--primary);
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.2);
+        }
+        
+        .header-info {
+            display: flex;
+            align-items: center;
+            gap: 2rem;
+        }
+        
+        .region-selector {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        
+        .region-selector select {
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            border: 1px solid #424242;
+            background: #333333;
+            color: white;
+            font-size: 1rem;
+            cursor: pointer;
+        }
+        
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            background: rgba(76, 175, 80, 0.1);
+            border: 1px solid var(--success);
+            border-radius: 6px;
+        }
+        
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            background: var(--success);
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+        
+        /* Tabs */
+        .tabs {
+            background: white;
+            padding: 0 2rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            display: flex;
+            gap: 2rem;
+        }
+        
+        .tab {
+            padding: 1rem 0;
+            border: none;
+            background: none;
+            color: var(--gray);
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s;
+        }
+        
+        .tab:hover {
+            color: var(--dark);
+        }
+        
+        .tab.active {
+            color: var(--primary);
+            border-bottom-color: var(--primary);
+        }
+        
+        /* Main Layout */
+        .container {
+            padding: 2rem;
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        /* Stats Cards */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        
+        .stat-card {
+            background: var(--surface);
+            padding: 1.75rem;
+            border-radius: 16px;
+            box-shadow: var(--shadow-md);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            border: 1px solid var(--gray-200);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-lg);
+            border-color: var(--primary-light);
+        }
+        
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: linear-gradient(90deg, var(--primary) 0%, var(--primary-light) 100%);
+        }
+        
+        .stat-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+        
+        .stat-card-title {
+            color: var(--gray);
+            font-size: 0.875rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        
+        .stat-card-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.25rem;
+        }
+        
+        .icon-success { background: rgba(76, 175, 80, 0.1); color: var(--success); }
+        .icon-warning { background: rgba(255, 152, 0, 0.1); color: var(--warning); }
+        .icon-danger { background: rgba(244, 67, 54, 0.1); color: var(--danger); }
+        .icon-primary { background: rgba(139, 195, 74, 0.1); color: var(--primary); }
+        .icon-disabled { background: rgba(158, 158, 158, 0.1); color: #9e9e9e; }
+        
+        .stat-card-value {
+            font-size: 2.25rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+            line-height: 1.2;
+            letter-spacing: -0.025em;
+        }
+        
+        .stat-card-change {
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+            font-size: 0.875rem;
+        }
+        
+        .change-up { color: var(--success); }
+        .change-down { color: var(--danger); }
+        
+        /* Stores Grid */
+        .stores-section {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 2px solid var(--light);
+        }
+        
+        .section-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--dark);
+        }
+        
+        .filter-buttons {
+            display: flex;
+            gap: 0.5rem;
+        }
+        
+        .filter-btn {
+            padding: 0.5rem 1rem;
+            border: 1px solid #e0e0e0;
+            background: white;
+            border-radius: 6px;
+            font-size: 0.875rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .filter-btn:hover {
+            background: var(--light);
+        }
+        
+        .filter-btn.active {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+        
+        .stores-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 1.5rem;
+        }
+        
+        .store-card {
+            border: 1px solid var(--gray-200);
+            border-radius: 16px;
+            padding: 1.75rem;
+            background: var(--surface);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+            position: relative;
+            box-shadow: var(--shadow-sm);
+            backdrop-filter: blur(10px);
+        }
+        
+        .store-card:hover {
+            box-shadow: var(--shadow-md);
+            transform: translateY(-3px);
+            border-color: var(--primary-light);
+        }
+        
+        .store-card.status-ok { 
+            border-left: 6px solid var(--success);
+            background: linear-gradient(135deg, var(--surface) 0%, var(--success-bg) 100%);
+            box-shadow: 0 2px 8px rgba(0, 200, 83, 0.1);
+        }
+        .store-card.status-warning { 
+            border-left: 6px solid var(--warning);
+            background: linear-gradient(135deg, var(--surface) 0%, var(--warning-bg) 100%);
+            box-shadow: 0 2px 8px rgba(255, 109, 0, 0.1);
+        }
+        .store-card.status-critical { 
+            border-left: 6px solid var(--danger);
+            background: linear-gradient(135deg, var(--surface) 0%, var(--danger-bg) 100%);
+            box-shadow: 0 2px 8px rgba(213, 0, 0, 0.1);
+            animation: criticalPulse 2s ease-in-out infinite;
+        }
+
+        @keyframes criticalPulse {
+            0%, 100% { 
+                box-shadow: 0 2px 8px rgba(213, 0, 0, 0.1); 
+            }
+            50% { 
+                box-shadow: 0 4px 16px rgba(213, 0, 0, 0.3); 
+            }
+        }
+        
+        .store-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 1rem;
+        }
+        
+        .store-info h3 {
+            font-size: 1.125rem;
+            font-weight: 700;
+            color: var(--dark);
+            margin-bottom: 0.25rem;
+        }
+        
+        .store-location {
+            color: var(--gray);
+            font-size: 0.875rem;
+        }
+        
+        .store-status {
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        
+        .status-ok {
+            background: var(--success-bg);
+            color: var(--success);
+            border: 2px solid var(--success);
+            font-weight: 700;
+            text-transform: uppercase;
+            font-size: 0.75rem;
+            letter-spacing: 0.5px;
+        }
+        
+        .status-warning {
+            background: var(--warning-bg);
+            color: var(--warning);
+            border: 2px solid var(--warning);
+            font-weight: 700;
+            text-transform: uppercase;
+            font-size: 0.75rem;
+            letter-spacing: 0.5px;
+        }
+        
+        .status-critical {
+            background: var(--danger-bg);
+            color: var(--danger);
+            border: 2px solid var(--danger);
+            font-weight: 700;
+            text-transform: uppercase;
+            font-size: 0.75rem;
+            letter-spacing: 0.5px;
+            animation: criticalBlink 1.5s ease-in-out infinite;
+        }
+
+        @keyframes criticalBlink {
+            0%, 100% { 
+                background: var(--danger-bg);
+            }
+            50% { 
+                background: rgba(213, 0, 0, 0.3);
+            }
+        }
+        
+        .store-metrics {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 0.5rem;
+            font-size: 0.875rem;
+        }
+        
+        .store-metrics .metric:nth-child(3),
+        .store-metrics .metric:nth-child(5) {
+            border-top: 1px solid #f0f0f0;
+            padding-top: 0.5rem;
+            margin-top: 0.25rem;
+        }
+        
+        @media (min-width: 1200px) {
+            .stores-grid {
+                grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+            }
+        }
+        
+        .metric {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .metric-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+        }
+        
+        .metric-value {
+            flex: 1;
+        }
+        
+        .metric-label {
+            color: var(--gray);
+            font-size: 0.75rem;
+            text-transform: uppercase;
+        }
+        
+        .metric-number {
+            font-size: 1.125rem;
+            font-weight: 700;
+            color: var(--dark);
+        }
+        
+        .metric-disabled {
+            opacity: 0.6;
+        }
+        
+        .metric-soon {
+            font-size: 0.75rem;
+            color: #9e9e9e;
+            font-weight: 500;
+            font-style: italic;
+        }
+        
+        /* Charts Section */
+        .charts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        
+        .chart-container {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            height: 400px;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .chart-header {
+            margin-bottom: 1rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--light);
+            flex-shrink: 0;
+        }
+        
+        .chart-title {
+            font-size: 1.125rem;
+            font-weight: 700;
+            color: var(--dark);
+        }
+        
+        .chart-wrapper {
+            flex: 1;
+            position: relative;
+            min-height: 0;
+        }
+        
+        canvas {
+            max-height: 100% !important;
+        }
+        
+        /* Alerts Management */
+        .alerts-management {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .alerts-toolbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+        
+        .alert-filters {
+            display: flex;
+            gap: 1rem;
+        }
+        
+        .alert-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+        
+        .btn {
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 6px;
+            font-size: 0.875rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: var(--primary-dark);
+        }
+        
+        .btn-secondary {
+            background: var(--light);
+            color: var(--dark);
+        }
+        
+        .btn-danger {
+            background: var(--danger);
+            color: white;
+        }
+        
+        .alerts-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        .alerts-table th {
+            text-align: left;
+            padding: 0.75rem;
+            background: var(--light);
+            color: var(--gray);
+            font-size: 0.875rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        
+        .alerts-table td {
+            padding: 0.75rem;
+            border-bottom: 1px solid var(--light);
+        }
+        
+        .alerts-table tr:hover {
+            background: #f8f9fa;
+        }
+        
+        .alert-badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            display: inline-block;
+        }
+        
+        .badge-critical {
+            background: rgba(244, 67, 54, 0.1);
+            color: var(--danger);
+        }
+        
+        .badge-warning {
+            background: rgba(255, 152, 0, 0.1);
+            color: var(--warning);
+        }
+        
+        .badge-info {
+            background: rgba(139, 195, 74, 0.1);
+            color: var(--primary);
+        }
+        
+        /* Rules Management */
+        .rules-container {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            min-height: 400px;
+        }
+        
+        .rules-list {
+            display: grid;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+        
+        .rule-card {
+            padding: 1rem;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.2s;
+            background: white;
+            margin-bottom: 0.5rem;
+        }
+        
+        .rule-card:hover {
+            background: var(--light);
+            border-color: var(--primary);
+        }
+        
+        .rule-info {
+            flex: 1;
+        }
+        
+        .rule-name {
+            font-weight: 600;
+            color: var(--dark);
+            margin-bottom: 0.25rem;
+        }
+        
+        .rule-condition {
+            font-size: 0.875rem;
+            color: var(--gray);
+            margin-bottom: 0.5rem;
+        }
+        
+        .rule-tags {
+            display: flex;
+            gap: 0.5rem;
+        }
+        
+        .rule-tag {
+            padding: 0.2rem 0.5rem;
+            background: var(--light);
+            border-radius: 4px;
+            font-size: 0.75rem;
+            color: var(--gray);
+        }
+        
+        .rule-controls {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+        }
+        
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 48px;
+            height: 24px;
+        }
+        
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 24px;
+        }
+        
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        
+        input:checked + .slider {
+            background-color: var(--success);
+        }
+        
+        input:checked + .slider:before {
+            transform: translateX(24px);
+        }
+        
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(4px);
+        }
+        
+        /* Prevent body scroll when modal is open */
+        body.modal-open {
+            overflow: hidden;
+        }
+        
+        .modal.active {
+            display: flex;
+        }
+        
+        .modal-content {
+            background: var(--surface);
+            border-radius: 24px;
+            padding: 0;
+            max-width: 1000px;
+            width: 92%;
+            max-height: 90vh;
+            display: flex;
+            flex-direction: column;
+            animation: modalSlideIn 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: var(--shadow-xl);
+            border: 1px solid var(--gray-200);
+            backdrop-filter: blur(20px);
+        }
+        
+        #modalBody {
+            flex: 1;
+            overflow-y: auto;
+            min-height: 400px;
+            max-height: calc(90vh - 120px);
+        }
+        
+        .store-tab {
+            transition: all 0.3s ease;
+        }
+        
+        .store-tab.active {
+            color: var(--primary) !important;
+            border-bottom: 3px solid var(--primary) !important;
+        }
+        
+        /* Tab content styles - simplified */
+        .store-tab-content {
+            padding: 1rem;
+        }
+        
+        @keyframes modalSlideIn {
+            from {
+                transform: translateY(-50px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 2rem 2rem 1.5rem 2rem;
+            margin-bottom: 0;
+            border-bottom: 1px solid var(--gray-200);
+            background: linear-gradient(135deg, var(--surface) 0%, var(--gray-50) 100%);
+        }
+        
+        .modal-title {
+            font-size: 1.75rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            letter-spacing: -0.025em;
+        }
+        
+        .modal-close {
+            background: var(--gray-100);
+            border: none;
+            font-size: 1.25rem;
+            color: var(--text-secondary);
+            cursor: pointer;
+            padding: 0;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: all 0.2s ease;
+        }
+        
+        .modal-close:hover {
+            background: var(--gray-200);
+            color: var(--text-primary);
+            transform: scale(1.05);
+        }
+        
+        /* Toast Notifications */
+        .toast-container {
+            position: fixed;
+            top: 1rem;
+            right: 1rem;
+            z-index: 1000;
+        }
+        
+        .toast {
+            background: white;
+            border-radius: 8px;
+            padding: 1rem 1.5rem;
+            margin-bottom: 0.75rem;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            min-width: 300px;
+            animation: slideIn 0.3s ease;
+            border-left: 4px solid;
+        }
+        
+        .toast.toast-success { border-color: var(--success); }
+        .toast.toast-warning { border-color: var(--warning); }
+        .toast.toast-danger { border-color: var(--danger); }
+        
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+        
+        .store-number {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: var(--primary);
+            color: white;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 0.875rem;
+        }
+        
+        /* Form Elements */
+        .form-group {
+            margin-bottom: 1rem;
+        }
+        
+        .form-label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: var(--dark);
+            font-weight: 600;
+        }
+        
+        .form-control {
+            width: 100%;
+            padding: 0.5rem;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 1rem;
+        }
+        
+        .form-control:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+        
+        select.form-control {
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <div class="header">
+        <div class="logo">
+            <div class="logo-icon">
+                <span style="font-size: 2rem;">🏪</span>
+            </div>
+            <h1>StorePulse</h1>
+        </div>
+        <div class="header-info">
+            <div class="region-selector">
+                <label style="color: #9ca3af;">Rol:</label>
+                <select id="roleSelect" onchange="handleRoleChange()">
+                    <option value="gerente_general">Gerente General</option>
+                    <option value="superintendente1">Superintendente 1</option>
+                    <option value="superintendente2">Superintendente 2</option>
+                    <option value="gerente_tienda">Gerente de Tienda</option>
+                </select>
+            </div>
+            <div class="region-selector" id="regionSelectorContainer">
+                <label style="color: #9ca3af;">Región:</label>
+                <select id="regionSelect" onchange="filterByRegion()">
+                    <option value="all">Todas</option>
+                    <option value="superintendencia1">Superintendencia 1</option>
+                    <option value="superintendencia2">Superintendencia 2</option>
+                </select>
+            </div>
+            <div class="region-selector" id="storeSelectorContainer" style="display: none;">
+                <label style="color: #9ca3af;">Tienda:</label>
+                <select id="storeSelect" onchange="filterByStore()">
+                    <!-- Options will be populated dynamically -->
+                </select>
+            </div>
+            <div class="status-indicator">
+                <div class="status-dot"></div>
+                <span>Sistema Operativo</span>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Tabs -->
+    <div class="tabs">
+        <button class="tab active" onclick="showTab('dashboard')">Dashboard</button>
+        <button class="tab" onclick="showTab('alerts')">Gestión de Alertas</button>
+        <button class="tab" onclick="showTab('rules')">Gestión de Reglas</button>
+    </div>
+    
+    <!-- Main Container -->
+    <div class="container">
+        <!-- Dashboard Tab -->
+        <div id="dashboard" class="tab-content active">
+            <!-- Stats Cards -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-card-header">
+                        <span class="stat-card-title">Tiendas Activas</span>
+                        <div class="stat-card-icon icon-success">🏪</div>
+                    </div>
+                    <div class="stat-card-value" id="activeStores">15</div>
+                    <div class="stat-card-change change-up">
+                        <span>↑</span>
+                        <span>94% operativas</span>
+                    </div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-card-header">
+                        <span class="stat-card-title">Refrigeradores</span>
+                        <div class="stat-card-icon icon-primary">❄️</div>
+                    </div>
+                    <div class="stat-card-value" id="totalRefrigerators">218</div>
+                    <div class="stat-card-change change-up">
+                        <span>↑</span>
+                        <span id="fridgeStatus">96% operativos</span>
+                    </div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-card-header">
+                        <span class="stat-card-title">Alertas Refrigeración</span>
+                        <div class="stat-card-icon icon-warning">⚠️</div>
+                    </div>
+                    <div class="stat-card-value" id="fridgeAlerts">7</div>
+                    <div class="stat-card-change change-down">
+                        <span>↓</span>
+                        <span>3 críticas</span>
+                    </div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-card-header">
+                        <span class="stat-card-title">POS Activos</span>
+                        <div class="stat-card-icon icon-success">💻</div>
+                    </div>
+                    <div class="stat-card-value" id="activePOS">65</div>
+                    <div class="stat-card-change change-down">
+                        <span>↓</span>
+                        <span>2 desconectados</span>
+                    </div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-card-header">
+                        <span class="stat-card-title">Temperatura</span>
+                        <div class="stat-card-icon icon-success">🌡️</div>
+                    </div>
+                    <div class="stat-card-value" id="avgTemp">23.5°C</div>
+                    <div class="stat-card-change change-up">
+                        <span>↑</span>
+                        <span>Óptima verano</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Stores Section -->
+            <div class="stores-section">
+                <div class="section-header">
+                    <h2 class="section-title">Estado de Tiendas</h2>
+                    <div class="filter-buttons">
+                        <button class="filter-btn active" onclick="filterStores('all', this)">Todas</button>
+                        <button class="filter-btn" onclick="filterStores('ok', this)">Operativas</button>
+                        <button class="filter-btn" onclick="filterStores('warning', this)">Advertencia</button>
+                        <button class="filter-btn" onclick="filterStores('critical', this)">Críticas</button>
+                    </div>
+                </div>
+                <div class="stores-grid" id="storesGrid">
+                    <!-- Stores will be dynamically added here -->
+                </div>
+            </div>
+            
+            <!-- Refrigerators Overview Section -->
+            <div class="stores-section" style="margin-bottom: 2rem;">
+                <div class="section-header">
+                    <h2 class="section-title">Estado Global de Refrigeradores</h2>
+                    <div class="filter-buttons">
+                        <button class="filter-btn active" onclick="filterFridges('all', this)">Todos</button>
+                        <button class="filter-btn" onclick="filterFridges('frozen', this)">Congelados</button>
+                        <button class="filter-btn" onclick="filterFridges('meat', this)">Carnes</button>
+                        <button class="filter-btn" onclick="filterFridges('dairy', this)">Lácteos</button>
+                        <button class="filter-btn" onclick="filterFridges('beverages', this)">Bebidas</button>
+                    </div>
+                </div>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
+                    <div class="fridge-category-card" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 1rem; border-radius: 12px;">
+                        <div style="font-size: 0.875rem; opacity: 0.9;">Congelados (-18°C a -22°C)</div>
+                        <div style="font-size: 1.5rem; font-weight: 700; margin: 0.5rem 0;">52 unidades</div>
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <span style="font-size: 0.875rem;">✅ 48 OK</span>
+                            <span style="font-size: 0.875rem;">⚠️ 4 Alerta</span>
+                        </div>
+                    </div>
+                    <div class="fridge-category-card" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white; padding: 1rem; border-radius: 12px;">
+                        <div style="font-size: 0.875rem; opacity: 0.9;">Carnes (0°C a 4°C)</div>
+                        <div style="font-size: 1.5rem; font-weight: 700; margin: 0.5rem 0;">68 unidades</div>
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <span style="font-size: 0.875rem;">✅ 66 OK</span>
+                            <span style="font-size: 0.875rem;">⚠️ 2 Alerta</span>
+                        </div>
+                    </div>
+                    <div class="fridge-category-card" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); color: white; padding: 1rem; border-radius: 12px;">
+                        <div style="font-size: 0.875rem; opacity: 0.9;">Lácteos (2°C a 6°C)</div>
+                        <div style="font-size: 1.5rem; font-weight: 700; margin: 0.5rem 0;">51 unidades</div>
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <span style="font-size: 0.875rem;">✅ 50 OK</span>
+                            <span style="font-size: 0.875rem;">⚠️ 1 Alerta</span>
+                        </div>
+                    </div>
+                    <div class="fridge-category-card" style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); color: white; padding: 1rem; border-radius: 12px;">
+                        <div style="font-size: 0.875rem; opacity: 0.9;">Bebidas (3°C a 7°C)</div>
+                        <div style="font-size: 1.5rem; font-weight: 700; margin: 0.5rem 0;">47 unidades</div>
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <span style="font-size: 0.875rem;">✅ 47 OK</span>
+                            <span style="font-size: 0.875rem;">✅ 0 Alerta</span>
+                        </div>
+                    </div>
+                </div>
+                <!-- Mini heatmap of fridges by store -->
+                <div id="fridgeHeatmap" style="background: white; padding: 1rem; border-radius: 8px; margin-top: 1rem;">
+                    <!-- Will be populated by JavaScript -->
+                </div>
+            </div>
+            
+            <!-- Charts Section -->
+            <div class="charts-grid">
+                <div class="chart-container">
+                    <div class="chart-header">
+                        <h3 class="chart-title">Temperatura Promedio por Categoría</h3>
+                    </div>
+                    <div class="chart-wrapper">
+                        <canvas id="fridgeTempChart"></canvas>
+                    </div>
+                </div>
+                
+                <div class="chart-container">
+                    <div class="chart-header">
+                        <h3 class="chart-title">Alertas de Refrigeración (Últimas 24h)</h3>
+                    </div>
+                    <div class="chart-wrapper">
+                        <canvas id="fridgeAlertsChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Alerts Management Tab -->
+        <div id="alerts" class="tab-content">
+            <div class="alerts-management">
+                <div class="section-header">
+                    <h2 class="section-title">Gestión de Alertas</h2>
+                    <button class="btn btn-primary" onclick="showAlertDetails()">Nueva Alerta</button>
+                </div>
+                
+                <!-- Alert Statistics -->
+                <div class="stats-grid" style="margin-bottom: 2rem;">
+                    <div class="stat-card">
+                        <div class="stat-card-header">
+                            <span class="stat-card-title">Alertas Activas</span>
+                            <div class="stat-card-icon icon-danger">🚨</div>
+                        </div>
+                        <div class="stat-card-value" id="activeAlertsCount">3</div>
+                        <div class="stat-card-change change-up">
+                            <span>↑</span>
+                            <span>2 nuevas en la última hora</span>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <div class="stat-card-header">
+                            <span class="stat-card-title">Resueltas Hoy</span>
+                            <div class="stat-card-icon icon-success">✅</div>
+                        </div>
+                        <div class="stat-card-value" id="resolvedTodayCount">12</div>
+                        <div class="stat-card-change change-up">
+                            <span>↑</span>
+                            <span>Promedio: 45 min</span>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <div class="stat-card-header">
+                            <span class="stat-card-title">Tiempo Promedio</span>
+                            <div class="stat-card-icon icon-warning">⏱️</div>
+                        </div>
+                        <div class="stat-card-value" style="font-size: 1.5rem;">45 min</div>
+                        <div class="stat-card-change change-down">
+                            <span>↓</span>
+                            <span>-15 min vs ayer</span>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <div class="stat-card-header">
+                            <span class="stat-card-title">Tasa de Resolución</span>
+                            <div class="stat-card-icon icon-primary">📊</div>
+                        </div>
+                        <div class="stat-card-value">92%</div>
+                        <div class="stat-card-change change-up">
+                            <span>↑</span>
+                            <span>+5% esta semana</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="alerts-toolbar">
+                    <div class="alert-filters">
+                        <select class="form-control" style="width: 150px;">
+                            <option>Todas</option>
+                            <option>Activas</option>
+                            <option>Resueltas</option>
+                            <option>Silenciadas</option>
+                        </select>
+                        <select class="form-control" style="width: 150px;">
+                            <option>Última hora</option>
+                            <option>Hoy</option>
+                            <option>Esta semana</option>
+                            <option>Este mes</option>
+                        </select>
+                    </div>
+                    <div class="alert-actions">
+                        <button class="btn btn-secondary">Exportar</button>
+                        <button class="btn btn-secondary">Actualizar</button>
+                    </div>
+                </div>
+                
+                <table class="alerts-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Tienda</th>
+                            <th>Tipo</th>
+                            <th>Descripción</th>
+                            <th>Detectado</th>
+                            <th>Estado</th>
+                            <th>Tiempo Res.</th>
+                            <th>Atendido por</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="alertsTableBody">
+                        <!-- Alert rows will be dynamically added here -->
+                    </tbody>
+                </table>
+                
+                <div style="margin-top: 2rem; padding: 1rem; background: #f8f9fa; border-radius: 8px;">
+                    <h3 style="margin-bottom: 1rem; color: var(--dark);">Estadísticas de Cumplimiento</h3>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+                        <div>
+                            <p style="color: var(--gray); font-size: 0.875rem; margin: 0;">Mayor Incumplimiento</p>
+                            <p style="font-size: 1.25rem; font-weight: 700; margin: 0;">Vivienda Barbula</p>
+                            <p style="color: var(--danger); font-size: 0.875rem;">12 alertas este mes</p>
+                        </div>
+                        <div>
+                            <p style="color: var(--gray); font-size: 0.875rem; margin: 0;">Tiempo Promedio Resolución</p>
+                            <p style="font-size: 1.25rem; font-weight: 700; margin: 0;">23 minutos</p>
+                            <p style="color: var(--success); font-size: 0.875rem;">↓ 5 min vs mes anterior</p>
+                        </div>
+                        <div>
+                            <p style="color: var(--gray); font-size: 0.875rem; margin: 0;">Técnico Más Activo</p>
+                            <p style="font-size: 1.25rem; font-weight: 700; margin: 0;">Carlos Rodríguez</p>
+                            <p style="color: var(--primary); font-size: 0.875rem;">38 casos resueltos</p>
+                        </div>
+                        <div>
+                            <p style="color: var(--gray); font-size: 0.875rem; margin: 0;">Alertas Resueltas</p>
+                            <p style="font-size: 1.25rem; font-weight: 700; margin: 0;">87%</p>
+                            <p style="color: var(--success); font-size: 0.875rem;">156 de 179 totales</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Rules Management Tab -->
+        <div id="rules" class="tab-content">
+            <div class="rules-container">
+                <div class="section-header">
+                    <h2 class="section-title">Gestión de Reglas de Monitoreo</h2>
+                    <div>
+                        <button class="btn btn-secondary" onclick="debugRules()" style="margin-right: 10px;">Debug</button>
+                        <button class="btn btn-primary" onclick="showRuleModal()">Nueva Regla</button>
+                    </div>
+                </div>
+                
+                <div class="rules-list" id="rulesList">
+                    <!-- Rules will be dynamically added here -->
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Store Detail Modal -->
+    <div class="modal" id="storeModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title" id="modalTitle">Detalles de Tienda</h2>
+                <button class="modal-close" onclick="closeModal()">✕</button>
+            </div>
+            <div id="modalBody">
+                <!-- Modal content will be dynamically added -->
+            </div>
+        </div>
+    </div>
+    
+    <!-- Rule Modal -->
+    <div class="modal" id="ruleModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">Nueva Regla de Monitoreo</h2>
+                <button class="modal-close" onclick="closeRuleModal()">✕</button>
+            </div>
+            <div class="modal-body">
+                <form>
+                    <div class="form-group">
+                        <label class="form-label">Nombre de la Regla</label>
+                        <input type="text" class="form-control" placeholder="Ej: Temperatura alta en verano">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Métrica</label>
+                        <select class="form-control">
+                            <option>Temperatura Global</option>
+                            <option>Humedad Global</option>
+                            <option>Estado de POS</option>
+                            <option>Estado de Impresora</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Condición</label>
+                        <select class="form-control">
+                            <option>Mayor que</option>
+                            <option>Menor que</option>
+                            <option>Igual a</option>
+                            <option>Diferente de</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Valor</label>
+                        <input type="text" class="form-control" placeholder="Ej: 25">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Severidad</label>
+                        <select class="form-control">
+                            <option>Información</option>
+                            <option>Advertencia</option>
+                            <option>Crítico</option>
+                        </select>
+                    </div>
+                    
+                    <div style="display: flex; gap: 1rem; justify-content: flex-end; margin-top: 2rem;">
+                        <button type="button" class="btn btn-secondary" onclick="closeRuleModal()">Cancelar</button>
+                        <button type="button" class="btn btn-primary" onclick="saveRule()">Guardar Regla</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Toast Container -->
+    <div class="toast-container" id="toastContainer"></div>
+    
+    <script>
+        // Data Store
+        let stores = [];
+        let alerts = [];
+        let rules = [];
+        let refrigerators = [];
+        let tempHumidityChart, posChart, affluenceChart, fridgeTempChart, fridgeAlertsChart;
+        let currentSeason = 'summer'; // 'summer' or 'winter'
+        
+        // Refrigerator Categories and Temperature Ranges
+        const fridgeCategories = {
+            frozen: { 
+                name: 'Congelados', 
+                tempMin: -22, 
+                tempMax: -18, 
+                tempOptimal: -20,
+                products: 'Tequeños, Pastelitos, Helados',
+                icon: '🧊',
+                color: '#667eea'
+            },
+            meat: { 
+                name: 'Carnes', 
+                tempMin: 0, 
+                tempMax: 4, 
+                tempOptimal: 2,
+                products: 'Pollo, Res, Cerdo, Embutidos',
+                icon: '🥩',
+                color: '#f5576c'
+            },
+            dairy: { 
+                name: 'Lácteos', 
+                tempMin: 2, 
+                tempMax: 6, 
+                tempOptimal: 4,
+                products: 'Quesos, Mantequilla, Yogurt',
+                icon: '🧀',
+                color: '#00f2fe'
+            },
+            beverages: { 
+                name: 'Bebidas', 
+                tempMin: 3, 
+                tempMax: 7, 
+                tempOptimal: 5,
+                products: 'Refrescos, Jugos, Cervezas',
+                icon: '🥤',
+                color: '#fee140'
+            }
+        };
+        
+        // Generate refrigerator data for each store
+        function generateRefrigeratorData() {
+            const fridgeData = [];
+            
+            // Use the actual store data with their fridge counts
+            storeData.forEach((store, storeIndex) => {
+                const fridgeCount = store.fridges || 12; // Use store's fridges property or default to 12
+                
+                for (let i = 0; i < fridgeCount; i++) {
+                    // Determine category distribution
+                    let category;
+                    if (i < Math.floor(fridgeCount * 0.25)) category = 'frozen';
+                    else if (i < Math.floor(fridgeCount * 0.5)) category = 'meat';
+                    else if (i < Math.floor(fridgeCount * 0.75)) category = 'dairy';
+                    else category = 'beverages';
+                    
+                    const catInfo = fridgeCategories[category];
+                    const isAlarmed = Math.random() < 0.03; // 3% chance of alarm
+                    const deviation = isAlarmed ? (Math.random() * 4 - 2) : (Math.random() * 2 - 1);
+                    const currentTemp = catInfo.tempOptimal + deviation;
+                    
+                    fridgeData.push({
+                        id: `${store.id}-F${String(i+1).padStart(2, '0')}`,
+                        storeId: store.id,
+                        storeNumber: store.number,
+                        category: category,
+                        model: ['Torrey R-40', 'Imbera VR-24', 'Metalfrio VN-50', 'True GDM-49'][Math.floor(Math.random() * 4)],
+                        currentTemp: parseFloat(currentTemp.toFixed(1)),
+                        targetTemp: catInfo.tempOptimal,
+                        status: isAlarmed ? 'warning' : 'ok',
+                        lastMaintenance: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+                        energyConsumption: 150 + Math.random() * 100 // kWh per month
+                    });
+                }
+            });
+            
+            return fridgeData;
+        }
+        
+        // Store Data - La Granja
+        const storeData = [
+            { id: 'LG001', number: 1, name: 'El Bosque', location: 'Sector El Bosque', pos: 4, printers: 4, temp: 23.5, humidity: 52, peopleInStore: 45, peopleInQueue: 8, status: 'ok', region: 'superintendencia1', fridges: 12 },
+            { id: 'LG002', number: 2, name: 'San Diego', location: 'Av. San Diego', pos: 5, printers: 5, temp: 24.2, humidity: 48, peopleInStore: 62, peopleInQueue: 12, status: 'ok', region: 'superintendencia1', fridges: 14 },
+            { id: 'LG003', number: 3, name: 'Aranzazu', location: 'Sector Aranzazu', pos: 3, printers: 3, temp: 26.1, humidity: 62, peopleInStore: 28, peopleInQueue: 5, status: 'warning', region: 'superintendencia1', fridges: 10 },
+            { id: 'LG004', number: 4, name: 'Av. Bolivar Norte', location: 'Av. Bolívar Norte', pos: 6, printers: 6, temp: 23.8, humidity: 50, peopleInStore: 75, peopleInQueue: 15, status: 'ok', region: 'superintendencia1', fridges: 16 },
+            { id: 'LG005', number: 5, name: 'Naguanagua', location: 'Naguanagua', pos: 4, printers: 4, temp: 24.5, humidity: 55, peopleInStore: 38, peopleInQueue: 6, status: 'ok', region: 'superintendencia1', fridges: 13 },
+            { id: 'LG006', number: 6, name: 'Vivienda Barbula', location: 'Barbula', pos: 5, printers: 5, temp: 27.5, humidity: 65, peopleInStore: 55, peopleInQueue: 18, status: 'critical', region: 'superintendencia1', fridges: 15 },
+            { id: 'LG007', number: 7, name: 'Av. Las Ferias', location: 'Las Ferias', pos: 4, printers: 4, temp: 23.2, humidity: 51, peopleInStore: 48, peopleInQueue: 9, status: 'ok', region: 'superintendencia1', fridges: 11 },
+            { id: 'LG008', number: 8, name: 'Mañongo', location: 'Mañongo', pos: 3, printers: 3, temp: 24.5, humidity: 58, peopleInStore: 22, peopleInQueue: 4, status: 'ok', region: 'superintendencia1', fridges: 10 },
+            { id: 'LG009', number: 9, name: 'La Isabelica', location: 'La Isabelica', pos: 4, printers: 4, temp: 24.0, humidity: 53, peopleInStore: 41, peopleInQueue: 7, status: 'ok', region: 'superintendencia2', fridges: 12 },
+            { id: 'LG010', number: 10, name: 'Los Guayos', location: 'Los Guayos', pos: 3, printers: 3, temp: 25.8, humidity: 61, peopleInStore: 33, peopleInQueue: 11, status: 'warning', region: 'superintendencia2', fridges: 11 },
+            { id: 'LG011', number: 11, name: 'Centro Valencia', location: 'Centro', pos: 5, printers: 5, temp: 23.3, humidity: 49, peopleInStore: 89, peopleInQueue: 22, status: 'ok', region: 'superintendencia2', fridges: 16 },
+            { id: 'LG012', number: 12, name: 'Flor Amarillo', location: 'Flor Amarillo', pos: 3, printers: 3, temp: 23.6, humidity: 50, peopleInStore: 25, peopleInQueue: 3, status: 'ok', region: 'superintendencia2', fridges: 10 },
+            { id: 'LG013', number: 13, name: 'Paramacay', location: 'Paramacay', pos: 4, printers: 4, temp: 24.7, humidity: 56, peopleInStore: 52, peopleInQueue: 10, status: 'ok', region: 'superintendencia2', fridges: 14 },
+            { id: 'LG014', number: 14, name: 'Tocuyito', location: 'Tocuyito', pos: 3, printers: 3, temp: 23.9, humidity: 52, peopleInStore: 30, peopleInQueue: 6, status: 'ok', region: 'superintendencia2', fridges: 11 },
+            { id: 'LG015', number: 15, name: 'Guigue', location: 'Guigue', pos: 3, printers: 3, temp: 24.1, humidity: 54, peopleInStore: 27, peopleInQueue: 5, status: 'ok', region: 'superintendencia2', fridges: 10 },
+            { id: 'LG016', number: 16, name: 'Ciudad Alianza', location: 'Ciudad Alianza', pos: 4, printers: 4, temp: 23.7, humidity: 51, peopleInStore: 36, peopleInQueue: 8, status: 'ok', region: 'superintendencia2', fridges: 13 },
+            { id: 'LG017', number: 17, name: 'Aranzazu Mayorista', location: 'Aranzazu Mayorista', pos: 6, printers: 6, temp: 24.3, humidity: 55, peopleInStore: 95, peopleInQueue: 25, status: 'ok', region: 'superintendencia2', fridges: 16 }
+        ];
+        
+        // Temperature and Humidity Rules (Seasonal)
+        const seasonalRules = {
+            summer: {
+                temp: { min: 23, max: 25, optimal: 24 },
+                humidity: { min: 45, max: 60, optimal: 52 }
+            },
+            winter: {
+                temp: { min: 21, max: 23, optimal: 22 },
+                humidity: { min: 40, max: 50, optimal: 45 }
+            }
+        };
+        
+        // Initialize Rules
+        const defaultRules = [
+            {
+                id: 1,
+                name: 'Temperatura Alta Verano',
+                metric: 'temperature',
+                condition: '>',
+                value: 25,
+                severity: 'warning',
+                season: 'summer',
+                active: true,
+                description: 'Alerta cuando la temperatura supera 25°C en verano'
+            },
+            {
+                id: 2,
+                name: 'Humedad Alta Verano',
+                metric: 'humidity',
+                condition: '>',
+                value: 60,
+                severity: 'warning',
+                season: 'summer',
+                active: true,
+                description: 'Alerta cuando la humedad supera 60% en verano'
+            },
+            {
+                id: 3,
+                name: 'Temperatura Baja Invierno',
+                metric: 'temperature',
+                condition: '<',
+                value: 21,
+                severity: 'warning',
+                season: 'winter',
+                active: true,
+                description: 'Alerta cuando la temperatura es menor a 21°C en invierno'
+            },
+            {
+                id: 4,
+                name: 'POS Desconectado',
+                metric: 'pos_status',
+                condition: '==',
+                value: 'offline',
+                severity: 'critical',
+                season: 'all',
+                active: true,
+                description: 'Alerta crítica cuando un POS está desconectado'
+            },
+            {
+                id: 5,
+                name: 'Impresora Sin Conexión',
+                metric: 'printer_status',
+                condition: '==',
+                value: 'disconnected',
+                severity: 'critical',
+                season: 'all',
+                active: true,
+                description: 'Alerta cuando una impresora pierde conexión'
+            }
+        ];
+        
+        // Helper Functions
+        function generateTimeLabels(hours) {
+            const labels = [];
+            const now = new Date();
+            for (let i = hours - 1; i >= 0; i--) {
+                const time = new Date(now.getTime() - i * 60 * 60 * 1000);
+                labels.push(`${time.getHours()}:00`);
+            }
+            return labels;
+        }
+        
+        function generateTempData(baseTemp) {
+            const data = [];
+            for (let i = 0; i < 12; i++) {
+                data.push(baseTemp + (Math.random() * 2 - 1));
+            }
+            return data;
+        }
+        
+        function generateHumidityData(baseHumidity) {
+            const data = [];
+            for (let i = 0; i < 12; i++) {
+                data.push(baseHumidity + (Math.random() * 10 - 5));
+            }
+            return data;
+        }
+        
+        // Initialize
+        function init() {
+            stores = [...storeData];
+            refrigerators = generateRefrigeratorData();
+            rules = [...defaultRules];
+            
+            console.log(`StorePulse initialized: ${stores.length} stores, ${refrigerators.length} refrigerators`);
+            
+            updateStats();
+            renderStores();
+            renderAlerts();
+            renderFridgeHeatmap();
+            renderRules();
+            initCharts();
+            initFridgeCharts();
+            startRealTimeUpdates();
+            
+            // Initialize role system - default to Gerente General
+            handleRoleChange();
+        }
+        
+        // Tab Management
+        function showTab(tabName) {
+            // Hide all tabs
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // Show selected tab
+            document.getElementById(tabName).classList.add('active');
+            event.target.classList.add('active');
+        }
+        
+        // Update Statistics
+        function updateStats() {
+            const activeStoresCount = stores.filter(s => s.status !== 'critical').length;
+            const totalPOS = stores.reduce((sum, s) => sum + s.pos, 0);
+            const totalPeople = stores.reduce((sum, s) => sum + s.peopleInStore, 0);
+            const totalQueue = stores.reduce((sum, s) => sum + s.peopleInQueue, 0);
+            const avgTemp = (stores.reduce((sum, s) => sum + s.temp, 0) / stores.length).toFixed(1);
+            const activeAlertsCount = stores.filter(s => s.status !== 'ok').length;
+            
+            // Refrigerator statistics
+            const totalFridges = refrigerators ? refrigerators.length : 0;
+            const operationalFridges = refrigerators ? refrigerators.filter(f => f.status === 'ok').length : 0;
+            const fridgeAlerts = refrigerators ? refrigerators.filter(f => f.status !== 'ok').length : 0;
+            const criticalFridges = refrigerators ? refrigerators.filter(f => {
+                const cat = fridgeCategories[f.category];
+                return f.currentTemp < cat.tempMin || f.currentTemp > cat.tempMax;
+            }).length : 0;
+            
+            // Update DOM elements if they exist
+            if (document.getElementById('activeStores')) {
+                document.getElementById('activeStores').textContent = activeStoresCount;
+            }
+            if (document.getElementById('totalRefrigerators')) {
+                document.getElementById('totalRefrigerators').textContent = totalFridges;
+            }
+            if (document.getElementById('fridgeStatus')) {
+                const percentage = totalFridges > 0 ? Math.round((operationalFridges / totalFridges) * 100) : 0;
+                document.getElementById('fridgeStatus').textContent = `${percentage}% operativos`;
+            }
+            if (document.getElementById('fridgeAlerts')) {
+                document.getElementById('fridgeAlerts').textContent = fridgeAlerts;
+            }
+            if (document.getElementById('activePOS')) {
+                document.getElementById('activePOS').textContent = totalPOS - 2;
+            }
+            if (document.getElementById('avgTemp')) {
+                document.getElementById('avgTemp').textContent = avgTemp + '°C';
+            }
+        }
+        
+        // Render Stores
+        function renderStores() {
+            const grid = document.getElementById('storesGrid');
+            if (!grid) {
+                return;
+            }
+            grid.innerHTML = '';
+            
+            stores.forEach(store => {
+                    const card = document.createElement('div');
+                    card.className = `store-card status-${store.status}`;
+                    card.onclick = () => showStoreDetails(store);
+                    
+                    const seasonRules = seasonalRules[currentSeason];
+                    const tempStatus = store.temp > seasonRules.temp.max ? 'danger' : 
+                                     store.temp < seasonRules.temp.min ? 'warning' : 'success';
+                    const humidityStatus = store.humidity > seasonRules.humidity.max ? 'warning' : 
+                                          store.humidity < seasonRules.humidity.min ? 'warning' : 'success';
+                    
+                    // Get fridge status for this store
+                    const storeFridges = refrigerators ? refrigerators.filter(f => f.storeId === store.id) : [];
+                    const fridgeAlerts = storeFridges.filter(f => f.status !== 'ok').length;
+                    const fridgeStatus = fridgeAlerts > 2 ? 'danger' : fridgeAlerts > 0 ? 'warning' : 'success';
+                    
+                    card.innerHTML = `
+                    <span class="store-number">${store.number}</span>
+                    <div class="store-header">
+                        <div class="store-info">
+                            <h3>${store.name}</h3>
+                            <p class="store-location">${store.location}</p>
+                        </div>
+                        <span class="store-status status-${store.status}">
+                            ${store.status === 'ok' ? '🟢 OPERATIVO' : store.status === 'warning' ? '🟡 ADVERTENCIA' : '🔴 CRÍTICO'}
+                        </span>
+                    </div>
+                    <div class="store-metrics">
+                        <!-- Refrigeradores -->
+                        <div class="metric">
+                            <div class="metric-icon icon-${fridgeStatus}">❄️</div>
+                            <div class="metric-value">
+                                <div class="metric-label">Refrigeradores</div>
+                                <div class="metric-number">${storeFridges.length - fridgeAlerts}/${storeFridges.length}</div>
+                            </div>
+                        </div>
+                        
+                        <!-- POS -->
+                        <div class="metric">
+                            <div class="metric-icon icon-primary">💻</div>
+                            <div class="metric-value">
+                                <div class="metric-label">POS</div>
+                                <div class="metric-number">${store.pos - (store.status === 'critical' ? 1 : 0)}/${store.pos}</div>
+                            </div>
+                        </div>
+                        
+                        <!-- Impresoras -->
+                        <div class="metric">
+                            <div class="metric-icon icon-success">🖨️</div>
+                            <div class="metric-value">
+                                <div class="metric-label">Impresoras</div>
+                                <div class="metric-number">${store.printers}/${store.printers}</div>
+                            </div>
+                        </div>
+                        
+                        <!-- Afluencia deshabilitada -->
+                        <div class="metric metric-disabled">
+                            <div class="metric-icon icon-disabled">👥</div>
+                            <div class="metric-value">
+                                <div class="metric-label">En Tienda</div>
+                                <div class="metric-number metric-soon">Próximamente</div>
+                            </div>
+                        </div>
+                        
+                        <!-- Ambiente -->
+                        <div class="metric">
+                            <div class="metric-icon icon-${tempStatus}">🌡️</div>
+                            <div class="metric-value">
+                                <div class="metric-label">Temp</div>
+                                <div class="metric-number">${store.temp}°C</div>
+                            </div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-icon icon-${humidityStatus}">💧</div>
+                            <div class="metric-value">
+                                <div class="metric-label">Humedad</div>
+                                <div class="metric-number">${store.humidity}%</div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                grid.appendChild(card);
+            });
+        }
+        
+        // Initialize Charts
+        function initCharts() {
+            // Temperature and Humidity Chart
+            const tempHumCtx = document.getElementById('tempHumidityChart')?.getContext('2d');
+            if (tempHumCtx) {
+                const seasonRules = seasonalRules[currentSeason];
+                tempHumidityChart = new Chart(tempHumCtx, {
+                    type: 'line',
+                    data: {
+                        labels: generateTimeLabels(12),
+                        datasets: [{
+                            label: 'Temperatura (°C)',
+                            data: generateTempData(seasonRules.temp.optimal),
+                            borderColor: '#FF6B6B',
+                            backgroundColor: 'rgba(255, 107, 107, 0.1)',
+                            tension: 0.4,
+                            yAxisID: 'y'
+                        }, {
+                            label: 'Humedad (%)',
+                            data: generateHumidityData(seasonRules.humidity.optimal),
+                            borderColor: '#4DABF7',
+                            backgroundColor: 'rgba(77, 171, 247, 0.1)',
+                            tension: 0.4,
+                            yAxisID: 'y1'
+                        }, {
+                            label: `Temp. Óptima ${currentSeason === 'summer' ? 'Verano' : 'Invierno'}`,
+                            data: Array(12).fill(seasonRules.temp.optimal),
+                            borderColor: '#51CF66',
+                            borderDash: [5, 5],
+                            borderWidth: 2,
+                            pointRadius: 0,
+                            yAxisID: 'y'
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        interaction: {
+                            mode: 'index',
+                            intersect: false,
+                        },
+                        plugins: {
+                            legend: {
+                                position: 'bottom',
+                                labels: {
+                                    padding: 10,
+                                    boxWidth: 12
+                                }
+                            }
+                        },
+                        scales: {
+                            y: {
+                                type: 'linear',
+                                display: true,
+                                position: 'left',
+                                min: 18,
+                                max: 30,
+                                title: {
+                                    display: true,
+                                    text: 'Temperatura (°C)'
+                                }
+                            },
+                            y1: {
+                                type: 'linear',
+                                display: true,
+                                position: 'right',
+                                min: 30,
+                                max: 70,
+                                title: {
+                                    display: true,
+                                    text: 'Humedad (%)'
+                                },
+                                grid: {
+                                    drawOnChartArea: false
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+            
+            // POS Chart
+            const posCtx = document.getElementById('posChart')?.getContext('2d');
+            if (posCtx) {
+                const topStores = stores.slice(0, 8);
+                posChart = new Chart(posCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: topStores.map(s => `${s.number}. ${s.name}`),
+                        datasets: [{
+                            label: 'POS Activos',
+                            data: topStores.map(s => s.pos - (s.status === 'critical' ? 1 : 0)),
+                            backgroundColor: 'rgba(139, 195, 74, 0.8)'
+                        }, {
+                            label: 'POS Inactivos',
+                            data: topStores.map(s => s.status === 'critical' ? 1 : 0),
+                            backgroundColor: 'rgba(244, 67, 54, 0.8)'
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'bottom',
+                                labels: {
+                                    padding: 10,
+                                    boxWidth: 12
+                                }
+                            }
+                        },
+                        scales: {
+                            x: {
+                                stacked: true,
+                                ticks: {
+                                    maxRotation: 45,
+                                    minRotation: 45
+                                }
+                            },
+                            y: {
+                                stacked: true,
+                                beginAtZero: true
+                            }
+                        }
+                    }
+                });
+            }
+        }
+        
+        // Render Fridge Heatmap
+        function renderFridgeHeatmap() {
+            const heatmapDiv = document.getElementById('fridgeHeatmap');
+            if (!heatmapDiv || !refrigerators) return;
+            
+            // Group refrigerators by store and category
+            const storeMap = {};
+            refrigerators.forEach(fridge => {
+                if (!storeMap[fridge.storeId]) {
+                    storeMap[fridge.storeId] = {
+                        frozen: { ok: 0, warning: 0 },
+                        meat: { ok: 0, warning: 0 },
+                        dairy: { ok: 0, warning: 0 },
+                        beverages: { ok: 0, warning: 0 }
+                    };
+                }
+                storeMap[fridge.storeId][fridge.category][fridge.status]++;
+            });
+            
+            let html = '<h3 style="margin-bottom: 1rem; font-size: 1rem; font-weight: 600;">Mapa de Calor - Refrigeradores por Tienda</h3>';
+            html += '<div style="overflow-x: auto;"><table style="width: 100%; font-size: 0.75rem; border-collapse: collapse;">';
+            html += '<thead><tr style="background: #f8f9fa;"><th style="padding: 0.5rem; text-align: left;">Tienda</th>';
+            html += '<th style="padding: 0.5rem; text-align: center;">🧊 Congelados</th>';
+            html += '<th style="padding: 0.5rem; text-align: center;">🥩 Carnes</th>';
+            html += '<th style="padding: 0.5rem; text-align: center;">🧀 Lácteos</th>';
+            html += '<th style="padding: 0.5rem; text-align: center;">🥤 Bebidas</th>';
+            html += '<th style="padding: 0.5rem; text-align: center;">Total</th></tr></thead><tbody>';
+            
+            stores.forEach(store => {
+                const data = storeMap[store.id];
+                if (!data) return;
+                
+                const totalOk = data.frozen.ok + data.meat.ok + data.dairy.ok + data.beverages.ok;
+                const totalWarning = data.frozen.warning + data.meat.warning + data.dairy.warning + data.beverages.warning;
+                const total = totalOk + totalWarning;
+                
+                html += `<tr style="border-bottom: 1px solid #e0e0e0;">`;
+                html += `<td style="padding: 0.5rem; font-weight: 600;">#${store.number} ${store.name}</td>`;
+                
+                ['frozen', 'meat', 'dairy', 'beverages'].forEach(cat => {
+                    const catData = data[cat];
+                    const catTotal = catData.ok + catData.warning;
+                    if (catTotal === 0) {
+                        html += '<td style="padding: 0.5rem; text-align: center;">-</td>';
+                    } else if (catData.warning > 0) {
+                        html += `<td style="padding: 0.5rem; text-align: center; background: rgba(255, 152, 0, 0.1);">`;
+                        html += `<span style="color: #4CAF50;">${catData.ok}</span>/<span style="color: #FF9800;">${catData.warning}</span>`;
+                        html += '</td>';
+                    } else {
+                        html += `<td style="padding: 0.5rem; text-align: center; background: rgba(76, 175, 80, 0.05);">`;
+                        html += `<span style="color: #4CAF50;">${catTotal}</span>`;
+                        html += '</td>';
+                    }
+                });
+                
+                const bgColor = totalWarning > 2 ? 'rgba(244, 67, 54, 0.1)' : 
+                               totalWarning > 0 ? 'rgba(255, 152, 0, 0.1)' : 
+                               'rgba(76, 175, 80, 0.1)';
+                html += `<td style="padding: 0.5rem; text-align: center; background: ${bgColor}; font-weight: 600;">${total}</td>`;
+                html += '</tr>';
+            });
+            
+            html += '</tbody></table></div>';
+            heatmapDiv.innerHTML = html;
+        }
+        
+        // Initialize Fridge Charts
+        function initFridgeCharts() {
+            // Temperature by Category Chart
+            const fridgeTempCtx = document.getElementById('fridgeTempChart')?.getContext('2d');
+            if (fridgeTempCtx && refrigerators) {
+                const categories = ['frozen', 'meat', 'dairy', 'beverages'];
+                const avgTemps = categories.map(cat => {
+                    const catFridges = refrigerators.filter(f => f.category === cat);
+                    return catFridges.length > 0 
+                        ? catFridges.reduce((sum, f) => sum + f.currentTemp, 0) / catFridges.length
+                        : 0;
+                });
+                
+                fridgeTempChart = new Chart(fridgeTempCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: ['Congelados', 'Carnes', 'Lácteos', 'Bebidas'],
+                        datasets: [{
+                            label: 'Temp. Promedio',
+                            data: avgTemps,
+                            backgroundColor: [
+                                'rgba(102, 126, 234, 0.8)',
+                                'rgba(245, 87, 108, 0.8)',
+                                'rgba(0, 242, 254, 0.8)',
+                                'rgba(254, 225, 64, 0.8)'
+                            ],
+                            borderWidth: 2,
+                            borderColor: [
+                                'rgba(102, 126, 234, 1)',
+                                'rgba(245, 87, 108, 1)',
+                                'rgba(0, 242, 254, 1)',
+                                'rgba(254, 225, 64, 1)'
+                            ]
+                        }, {
+                            label: 'Temp. Óptima',
+                            data: categories.map(cat => fridgeCategories[cat].tempOptimal),
+                            type: 'line',
+                            borderColor: 'var(--success)',
+                            backgroundColor: 'transparent',
+                            borderWidth: 2,
+                            pointRadius: 4,
+                            pointBackgroundColor: 'var(--success)'
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'bottom',
+                                labels: {
+                                    padding: 10,
+                                    boxWidth: 12
+                                }
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        return context.dataset.label + ': ' + context.parsed.y.toFixed(1) + '°C';
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: false,
+                                min: -25,
+                                max: 10,
+                                title: {
+                                    display: true,
+                                    text: 'Temperatura (°C)'
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+            
+            // Fridge Alerts Timeline Chart
+            const fridgeAlertsCtx = document.getElementById('fridgeAlertsChart')?.getContext('2d');
+            if (fridgeAlertsCtx) {
+                const hours = [];
+                const alertCounts = [];
+                const now = new Date();
+                
+                for (let i = 23; i >= 0; i--) {
+                    const hour = new Date(now.getTime() - i * 60 * 60 * 1000);
+                    hours.push(hour.getHours() + ':00');
+                    // Simulate alert data
+                    alertCounts.push(Math.floor(Math.random() * 5) + (i < 6 ? 2 : 0));
+                }
+                
+                fridgeAlertsChart = new Chart(fridgeAlertsCtx, {
+                    type: 'line',
+                    data: {
+                        labels: hours,
+                        datasets: [{
+                            label: 'Alertas de Temperatura',
+                            data: alertCounts,
+                            borderColor: '#FF6B6B',
+                            backgroundColor: 'rgba(255, 107, 107, 0.1)',
+                            tension: 0.4,
+                            fill: true
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: false
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                title: {
+                                    display: true,
+                                    text: 'Número de Alertas'
+                                }
+                            },
+                            x: {
+                                ticks: {
+                                    maxRotation: 45,
+                                    minRotation: 45
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+        }
+        
+        // Filter Fridges
+        function filterFridges(category, btn) {
+            // Update active button
+            document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            
+            // Filter and update heatmap
+            if (category !== 'all') {
+                // You can implement filtering logic here
+                console.log('Filtering by:', category);
+            }
+            renderFridgeHeatmap();
+        }
+        
+        // Initialize Affluence Chart
+        function initAffluenceChart(storeId) {
+            const ctx = document.getElementById('affluenceChart')?.getContext('2d');
+            if (!ctx) return;
+            
+            // Destroy existing chart if it exists
+            if (affluenceChart) {
+                affluenceChart.destroy();
+            }
+            
+            // Generate sample data
+            const hours = [];
+            const peopleData = [];
+            const queueData = [];
+            
+            for (let i = 0; i < 24; i++) {
+                hours.push(`${i}:00`);
+                // Simulate peak hours
+                const peakFactor = (i >= 11 && i <= 13) || (i >= 18 && i <= 20) ? 2 : 1;
+                peopleData.push(Math.floor(20 + Math.random() * 40 * peakFactor));
+                queueData.push(Math.floor(5 + Math.random() * 10 * peakFactor));
+            }
+            
+            affluenceChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: hours,
+                    datasets: [{
+                        label: 'Clientes en Tienda',
+                        data: peopleData,
+                        borderColor: 'var(--success)',
+                        backgroundColor: 'var(--success-bg)',
+                        tension: 0.4,
+                        fill: true
+                    }, {
+                        label: 'Clientes en Cola',
+                        data: queueData,
+                        borderColor: 'var(--warning)',
+                        backgroundColor: 'var(--warning-bg)',
+                        tension: 0.4,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Número de Clientes'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        // Update Affluence Chart
+        function updateAffluenceChart(storeId, period) {
+            // Update button states
+            document.querySelectorAll('.affluence-filter').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            // Reinitialize chart with new data based on period
+            initAffluenceChart(storeId);
+        }
+        
+        // Initialize Temperature History Chart
+        function initTemperatureHistoryChart(storeData) {
+            const ctx = document.getElementById('temperatureHistoryChart')?.getContext('2d');
+            if (!ctx) return;
+            
+            // Generate historical data for 7 days
+            const days = [];
+            const frozenData = [];
+            const meatData = [];
+            const dairyData = [];
+            const beveragesData = [];
+            
+            // Temperature ranges for each category
+            const tempRanges = {
+                frozen: { min: -20, max: -15, ideal: -18 },
+                meat: { min: 0, max: 4, ideal: 2 },
+                dairy: { min: 2, max: 6, ideal: 4 },
+                beverages: { min: 4, max: 8, ideal: 6 }
+            };
+            
+            // Generate 7 days of data
+            for (let i = 6; i >= 0; i--) {
+                const date = new Date();
+                date.setDate(date.getDate() - i);
+                days.push(date.toLocaleDateString('es-ES', { month: 'short', day: 'numeric' }));
+                
+                // Generate temperature data with occasional spikes
+                const hasSpike = Math.random() < 0.2; // 20% chance of spike
+                
+                frozenData.push({
+                    y: hasSpike ? 
+                        tempRanges.frozen.max + Math.random() * 5 : 
+                        tempRanges.frozen.ideal + (Math.random() - 0.5) * 4,
+                    hasAlert: hasSpike
+                });
+                
+                meatData.push({
+                    y: hasSpike ? 
+                        tempRanges.meat.max + Math.random() * 3 : 
+                        tempRanges.meat.ideal + (Math.random() - 0.5) * 2,
+                    hasAlert: hasSpike
+                });
+                
+                dairyData.push({
+                    y: hasSpike ? 
+                        tempRanges.dairy.max + Math.random() * 2 : 
+                        tempRanges.dairy.ideal + (Math.random() - 0.5) * 2,
+                    hasAlert: hasSpike
+                });
+                
+                beveragesData.push({
+                    y: hasSpike ? 
+                        tempRanges.beverages.max + Math.random() * 2 : 
+                        tempRanges.beverages.ideal + (Math.random() - 0.5) * 2,
+                    hasAlert: hasSpike
+                });
+            }
+            
+            // Destroy existing chart if it exists
+            if (window.temperatureHistoryChart) {
+                window.temperatureHistoryChart.destroy();
+            }
+            
+            window.temperatureHistoryChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: days,
+                    datasets: [
+                        {
+                            label: 'Congelados',
+                            data: frozenData.map(d => d.y),
+                            borderColor: '#3b82f6',
+                            backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                            borderWidth: 2,
+                            fill: false,
+                            pointBackgroundColor: frozenData.map(d => d.hasAlert ? '#ef4444' : '#3b82f6'),
+                            pointBorderColor: frozenData.map(d => d.hasAlert ? '#dc2626' : '#3b82f6'),
+                            pointRadius: frozenData.map(d => d.hasAlert ? 8 : 4),
+                            pointHoverRadius: 10
+                        },
+                        {
+                            label: 'Carnes',
+                            data: meatData.map(d => d.y),
+                            borderColor: '#ef4444',
+                            backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                            borderWidth: 2,
+                            fill: false,
+                            pointBackgroundColor: meatData.map(d => d.hasAlert ? '#f59e0b' : '#ef4444'),
+                            pointBorderColor: meatData.map(d => d.hasAlert ? '#d97706' : '#ef4444'),
+                            pointRadius: meatData.map(d => d.hasAlert ? 8 : 4),
+                            pointHoverRadius: 10
+                        },
+                        {
+                            label: 'Lácteos',
+                            data: dairyData.map(d => d.y),
+                            borderColor: '#10b981',
+                            backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                            borderWidth: 2,
+                            fill: false,
+                            pointBackgroundColor: dairyData.map(d => d.hasAlert ? '#f59e0b' : '#10b981'),
+                            pointBorderColor: dairyData.map(d => d.hasAlert ? '#d97706' : '#10b981'),
+                            pointRadius: dairyData.map(d => d.hasAlert ? 8 : 4),
+                            pointHoverRadius: 10
+                        },
+                        {
+                            label: 'Bebidas',
+                            data: beveragesData.map(d => d.y),
+                            borderColor: '#f59e0b',
+                            backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                            borderWidth: 2,
+                            fill: false,
+                            pointBackgroundColor: beveragesData.map(d => d.hasAlert ? '#ef4444' : '#f59e0b'),
+                            pointBorderColor: beveragesData.map(d => d.hasAlert ? '#dc2626' : '#f59e0b'),
+                            pointRadius: beveragesData.map(d => d.hasAlert ? 8 : 4),
+                            pointHoverRadius: 10
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Historial de Temperaturas (7 días)',
+                            color: '#1f2937',
+                            font: {
+                                size: 16,
+                                weight: '600'
+                            }
+                        },
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                padding: 20,
+                                usePointStyle: true,
+                                color: '#374151'
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                title: function(context) {
+                                    return `Fecha: ${context[0].label}`;
+                                },
+                                label: function(context) {
+                                    const dataIndex = context.dataIndex;
+                                    const datasetLabel = context.dataset.label;
+                                    const temp = context.parsed.y.toFixed(1);
+                                    
+                                    let alertInfo = '';
+                                    if (datasetLabel === 'Congelados' && frozenData[dataIndex].hasAlert) {
+                                        alertInfo = ' 🚨 ALERTA';
+                                    } else if (datasetLabel === 'Carnes' && meatData[dataIndex].hasAlert) {
+                                        alertInfo = ' 🚨 ALERTA';
+                                    } else if (datasetLabel === 'Lácteos' && dairyData[dataIndex].hasAlert) {
+                                        alertInfo = ' 🚨 ALERTA';
+                                    } else if (datasetLabel === 'Bebidas' && beveragesData[dataIndex].hasAlert) {
+                                        alertInfo = ' 🚨 ALERTA';
+                                    }
+                                    
+                                    return `${datasetLabel}: ${temp}°C${alertInfo}`;
+                                }
+                            },
+                            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                            titleColor: '#ffffff',
+                            bodyColor: '#ffffff',
+                            borderColor: '#374151',
+                            borderWidth: 1
+                        }
+                    },
+                    scales: {
+                        y: {
+                            title: {
+                                display: true,
+                                text: 'Temperatura (°C)',
+                                color: '#374151',
+                                font: {
+                                    size: 14,
+                                    weight: '500'
+                                }
+                            },
+                            grid: {
+                                color: '#e5e7eb'
+                            },
+                            ticks: {
+                                color: '#6b7280'
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Fecha',
+                                color: '#374151',
+                                font: {
+                                    size: 14,
+                                    weight: '500'
+                                }
+                            },
+                            grid: {
+                                color: '#e5e7eb'
+                            },
+                            ticks: {
+                                color: '#6b7280'
+                            }
+                        }
+                    },
+                    interaction: {
+                        intersect: false,
+                        mode: 'index'
+                    }
+                }
+            });
+        }
+        
+        // Filter Stores
+        function filterStores(status, btn) {
+            // Update active button
+            document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            
+            // Filter stores
+            const filteredStores = status === 'all' ? stores : stores.filter(s => s.status === status);
+            
+            // Re-render filtered stores
+            const grid = document.getElementById('storesGrid');
+            if (!grid) return;
+            
+            grid.innerHTML = '';
+            filteredStores.forEach(store => {
+                // Use the same rendering logic from renderStores()
+                const card = document.createElement('div');
+                card.className = `store-card status-${store.status}`;
+                card.onclick = () => showStoreDetails(store);
+                
+                const seasonRules = seasonalRules[currentSeason];
+                const tempStatus = store.temp > seasonRules.temp.max ? 'danger' : 
+                                 store.temp < seasonRules.temp.min ? 'warning' : 'success';
+                const humidityStatus = store.humidity > seasonRules.humidity.max ? 'warning' : 
+                                      store.humidity < seasonRules.humidity.min ? 'warning' : 'success';
+                
+                // Get fridge status for this store
+                const storeFridges = refrigerators ? refrigerators.filter(f => f.storeId === store.id) : [];
+                const fridgeAlerts = storeFridges.filter(f => f.status !== 'ok').length;
+                
+                card.innerHTML = `
+                <span class="store-number">${store.number}</span>
+                <div class="store-header">
+                    <div class="store-info">
+                        <h3>${store.name}</h3>
+                        <p class="store-location">${store.location}</p>
+                    </div>
+                    <span class="store-status status-${store.status}">
+                        ${store.status === 'ok' ? '🟢 OPERATIVO' : store.status === 'warning' ? '🟡 ADVERTENCIA' : '🔴 CRÍTICO'}
+                    </span>
+                </div>
+                <div class="store-metrics">
+                    <!-- Refrigeradores -->
+                    <div class="metric">
+                        <div class="metric-icon icon-${fridgeAlerts > 0 ? 'warning' : 'success'}">❄️</div>
+                        <div class="metric-value">
+                            <div class="metric-label">Refrigeradores</div>
+                            <div class="metric-number">${store.fridges}${fridgeAlerts > 0 ? ` (⚠️${fridgeAlerts})` : ''}</div>
+                        </div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-icon icon-primary">💻</div>
+                        <div class="metric-value">
+                            <div class="metric-label">POS</div>
+                            <div class="metric-number">${store.pos - (store.status === 'critical' ? 1 : 0)}/${store.pos}</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Hardware -->
+                    <div class="metric">
+                        <div class="metric-icon icon-success">🖨️</div>
+                        <div class="metric-value">
+                            <div class="metric-label">Impresoras</div>
+                            <div class="metric-number">${store.printers}/${store.printers}</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Ambiente -->
+                    <div class="metric">
+                        <div class="metric-icon icon-${tempStatus}">🌡️</div>
+                        <div class="metric-value">
+                            <div class="metric-label">Temp</div>
+                            <div class="metric-number">${store.temp}°C</div>
+                        </div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-icon icon-${humidityStatus}">💧</div>
+                        <div class="metric-value">
+                            <div class="metric-label">Humedad</div>
+                            <div class="metric-number">${store.humidity}%</div>
+                        </div>
+                    </div>
+                </div>
+            `;
+                
+                grid.appendChild(card);
+            });
+        }
+        
+        // Filter by Region
+        function filterByRegion() {
+            const regionSelect = document.getElementById('regionSelect');
+            const selectedRegion = regionSelect.value;
+            
+            const filteredStores = selectedRegion === 'all' ? 
+                storeData : 
+                storeData.filter(s => s.region === selectedRegion);
+            
+            stores = [...filteredStores];
+            renderStores();
+        }
+        
+        // Handle Role Change
+        function handleRoleChange() {
+            const roleSelect = document.getElementById('roleSelect');
+            const selectedRole = roleSelect.value;
+            const regionContainer = document.getElementById('regionSelectorContainer');
+            const storeContainer = document.getElementById('storeSelectorContainer');
+            const regionSelect = document.getElementById('regionSelect');
+            const storeSelect = document.getElementById('storeSelect');
+            
+            // Reset selections
+            regionSelect.value = 'all';
+            storeSelect.innerHTML = '';
+            
+            if (selectedRole === 'gerente_general') {
+                // Gerente General: ve todas las tiendas
+                regionContainer.style.display = 'block';
+                storeContainer.style.display = 'none';
+                stores = [...storeData];
+                renderStores();
+                showToast('Vista: Gerente General - Todas las tiendas', 'info');
+                
+            } else if (selectedRole === 'superintendente1') {
+                // Superintendente 1: solo ve tiendas de superintendencia1
+                regionContainer.style.display = 'none';
+                storeContainer.style.display = 'none';
+                stores = storeData.filter(s => s.region === 'superintendencia1');
+                renderStores();
+                showToast('Vista: Superintendente 1 - Tiendas 1-8', 'info');
+                
+            } else if (selectedRole === 'superintendente2') {
+                // Superintendente 2: solo ve tiendas de superintendencia2
+                regionContainer.style.display = 'none';
+                storeContainer.style.display = 'none';
+                stores = storeData.filter(s => s.region === 'superintendencia2');
+                renderStores();
+                showToast('Vista: Superintendente 2 - Tiendas 9-17', 'info');
+                
+            } else if (selectedRole === 'gerente_tienda') {
+                // Gerente de Tienda: solo ve una tienda específica
+                regionContainer.style.display = 'none';
+                storeContainer.style.display = 'block';
+                
+                // Populate store selector with all stores
+                storeData.forEach(store => {
+                    const option = document.createElement('option');
+                    option.value = store.id;
+                    option.textContent = `${store.name} (Tienda ${store.number})`;
+                    storeSelect.appendChild(option);
+                });
+                
+                // Select first store by default
+                if (storeData.length > 0) {
+                    storeSelect.value = storeData[0].id;
+                    filterByStore();
+                }
+                
+                showToast('Vista: Gerente de Tienda - Seleccione una tienda', 'info');
+            }
+        }
+        
+        // Filter by Store (for Gerente de Tienda role)
+        function filterByStore() {
+            const storeSelect = document.getElementById('storeSelect');
+            const selectedStoreId = storeSelect.value;
+            
+            if (selectedStoreId) {
+                const selectedStore = storeData.find(s => s.id === selectedStoreId);
+                stores = [selectedStore];
+                renderStores();
+                showToast(`Vista: ${selectedStore.name}`, 'info');
+            }
+        }
+        
+        // Start Real-Time Updates
+        function startRealTimeUpdates() {
+            setInterval(() => {
+                // Update refrigerator temperatures slightly
+                if (refrigerators) {
+                    refrigerators.forEach(fridge => {
+                        const variation = (Math.random() - 0.5) * 0.2;
+                        fridge.currentTemp = parseFloat((fridge.currentTemp + variation).toFixed(1));
+                    });
+                }
+                
+                // Update store temperatures slightly
+                stores.forEach(store => {
+                    const variation = (Math.random() - 0.5) * 0.1;
+                    store.temp = parseFloat((store.temp + variation).toFixed(1));
+                });
+                
+                // Update statistics
+                updateStats();
+            }, 5000); // Update every 5 seconds
+        }
+        
+        // Render Alerts
+        function renderAlerts() {
+            const alertsData = [
+                // Alertas Activas
+                {
+                    id: 'AL001',
+                    store: 'Vivienda Barbula',
+                    storeNumber: 6,
+                    type: 'critical',
+                    description: 'Temperatura fuera de rango: 27.5°C (máx: 25°C)',
+                    detectedTime: '10:45 AM',
+                    status: 'active',
+                    resolutionTime: '-',
+                    attendedBy: '-'
+                },
+                {
+                    id: 'AL002',
+                    store: 'Los Guayos',
+                    storeNumber: 10,
+                    type: 'warning',
+                    description: 'Humedad elevada: 61% (máx: 60%)',
+                    detectedTime: '10:30 AM',
+                    status: 'active',
+                    resolutionTime: '-',
+                    attendedBy: '-'
+                },
+                {
+                    id: 'AL003',
+                    store: 'Aranzazu',
+                    storeNumber: 3,
+                    type: 'warning',
+                    description: 'POS-02 sin conexión',
+                    detectedTime: '10:15 AM',
+                    status: 'active',
+                    resolutionTime: '-',
+                    attendedBy: '-'
+                },
+                // Alertas Resueltas (Histórico)
+                {
+                    id: 'AL004',
+                    store: 'Vivienda Barbula',
+                    storeNumber: 6,
+                    type: 'critical',
+                    description: 'Falla sistema de refrigeración',
+                    detectedTime: '09:30 AM',
+                    status: 'resolved',
+                    resolutionTime: '45 min',
+                    attendedBy: 'Carlos Rodríguez'
+                },
+                {
+                    id: 'AL005',
+                    store: 'Centro Valencia',
+                    storeNumber: 11,
+                    type: 'info',
+                    description: 'Mantenimiento preventivo completado',
+                    detectedTime: '09:00 AM',
+                    status: 'resolved',
+                    resolutionTime: '30 min',
+                    attendedBy: 'María González'
+                },
+                {
+                    id: 'AL006',
+                    store: 'Vivienda Barbula',
+                    storeNumber: 6,
+                    type: 'warning',
+                    description: 'Impresora POS-03 desconectada',
+                    detectedTime: '08:45 AM',
+                    status: 'resolved',
+                    resolutionTime: '15 min',
+                    attendedBy: 'José Martínez'
+                },
+                {
+                    id: 'AL007',
+                    store: 'San Diego',
+                    storeNumber: 2,
+                    type: 'warning',
+                    description: 'Temperatura elevándose: 24.8°C',
+                    detectedTime: '08:30 AM',
+                    status: 'resolved',
+                    resolutionTime: '20 min',
+                    attendedBy: 'Carlos Rodríguez'
+                },
+                {
+                    id: 'AL008',
+                    store: 'Los Guayos',
+                    storeNumber: 10,
+                    type: 'critical',
+                    description: 'POS principal sin conexión',
+                    detectedTime: '08:00 AM',
+                    status: 'resolved',
+                    resolutionTime: '35 min',
+                    attendedBy: 'Luis Pérez'
+                },
+                {
+                    id: 'AL009',
+                    store: 'Vivienda Barbula',
+                    storeNumber: 6,
+                    type: 'warning',
+                    description: 'Humedad por encima del límite',
+                    detectedTime: '07:45 AM',
+                    status: 'resolved',
+                    resolutionTime: '25 min',
+                    attendedBy: 'Ana Silva'
+                },
+                {
+                    id: 'AL010',
+                    store: 'Aranzazu Mayorista',
+                    storeNumber: 17,
+                    type: 'info',
+                    description: 'Actualización de firmware exitosa',
+                    detectedTime: '07:30 AM',
+                    status: 'resolved',
+                    resolutionTime: '10 min',
+                    attendedBy: 'Sistema Automático'
+                },
+                {
+                    id: 'AL011',
+                    store: 'Naguanagua',
+                    storeNumber: 5,
+                    type: 'warning',
+                    description: 'Conexión intermitente POS-01',
+                    detectedTime: '07:15 AM',
+                    status: 'resolved',
+                    resolutionTime: '18 min',
+                    attendedBy: 'José Martínez'
+                },
+                {
+                    id: 'AL012',
+                    store: 'Vivienda Barbula',
+                    storeNumber: 6,
+                    type: 'critical',
+                    description: 'Temperatura crítica: 28°C',
+                    detectedTime: 'Ayer 11:30 PM',
+                    status: 'resolved',
+                    resolutionTime: '55 min',
+                    attendedBy: 'Carlos Rodríguez'
+                },
+                {
+                    id: 'AL013',
+                    store: 'El Bosque',
+                    storeNumber: 1,
+                    type: 'warning',
+                    description: 'Impresora sin papel',
+                    detectedTime: 'Ayer 10:00 PM',
+                    status: 'resolved',
+                    resolutionTime: '12 min',
+                    attendedBy: 'Personal Tienda'
+                },
+                {
+                    id: 'AL014',
+                    store: 'Los Guayos',
+                    storeNumber: 10,
+                    type: 'warning',
+                    description: 'Temperatura subiendo gradualmente',
+                    detectedTime: 'Ayer 09:15 PM',
+                    status: 'resolved',
+                    resolutionTime: '28 min',
+                    attendedBy: 'María González'
+                },
+                {
+                    id: 'AL015',
+                    store: 'Vivienda Barbula',
+                    storeNumber: 6,
+                    type: 'warning',
+                    description: 'POS-04 reinicio inesperado',
+                    detectedTime: 'Ayer 08:30 PM',
+                    status: 'resolved',
+                    resolutionTime: '22 min',
+                    attendedBy: 'Luis Pérez'
+                }
+            ];
+            
+            // Populate alerts table if it exists
+            const tableBody = document.getElementById('alertsTableBody');
+            if (tableBody) {
+                tableBody.innerHTML = '';
+                alertsData.forEach(alert => {
+                const row = document.createElement('tr');
+                const statusBadgeClass = alert.status === 'active' ? 'badge-warning' : 'badge-info';
+                const statusText = alert.status === 'active' ? 'ACTIVA' : 'RESUELTA';
+                
+                row.innerHTML = `
+                    <td>${alert.id}</td>
+                    <td>#${alert.storeNumber} ${alert.store}</td>
+                    <td><span class="alert-badge badge-${alert.type}">${alert.type.toUpperCase()}</span></td>
+                    <td>${alert.description}</td>
+                    <td>${alert.detectedTime}</td>
+                    <td><span class="alert-badge ${statusBadgeClass}">${statusText}</span></td>
+                    <td>${alert.resolutionTime}</td>
+                    <td>${alert.attendedBy}</td>
+                    <td>
+                        <button class="btn btn-secondary" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;">Ver</button>
+                        ${alert.status === 'active' ? '<button class="btn btn-primary" style="padding: 0.25rem 0.5rem; font-size: 0.75rem; margin-left: 0.25rem;">Resolver</button>' : ''}
+                    </td>
+                `;
+                    tableBody.appendChild(row);
+                });
+            }
+            
+            // Update Alert Statistics
+            updateAlertStatistics(alertsData);
+        }
+        
+        // Update Alert Statistics
+        function updateAlertStatistics(alertsData) {
+            // Count active and resolved alerts
+            const activeAlerts = alertsData.filter(a => a.status === 'active');
+            const resolvedToday = alertsData.filter(a => a.status === 'resolved' && !a.detectedTime.includes('Ayer'));
+            
+            // Calculate average resolution time
+            const resolutionTimes = alertsData
+                .filter(a => a.status === 'resolved' && a.resolutionTime !== '-')
+                .map(a => parseInt(a.resolutionTime));
+            const avgResolutionTime = resolutionTimes.length > 0 
+                ? Math.round(resolutionTimes.reduce((a, b) => a + b, 0) / resolutionTimes.length)
+                : 0;
+            
+            // Calculate resolution rate
+            const totalAlerts = alertsData.length;
+            const resolvedAlerts = alertsData.filter(a => a.status === 'resolved').length;
+            const resolutionRate = totalAlerts > 0 ? Math.round((resolvedAlerts / totalAlerts) * 100) : 0;
+            
+            // Update the statistics cards if they exist
+            const activeAlertsEl = document.getElementById('activeAlertsCount');
+            const resolvedTodayEl = document.getElementById('resolvedTodayCount');
+            
+            if (activeAlertsEl) {
+                activeAlertsEl.textContent = activeAlerts.length;
+            }
+            if (resolvedTodayEl) {
+                resolvedTodayEl.textContent = resolvedToday.length;
+            }
+        }
+        
+        // Render Rules
+        function renderRules() {
+            console.log('===== renderRules() called =====');
+            console.log('Global rules variable:', rules);
+            console.log('Rules length:', rules ? rules.length : 'rules is undefined/null');
+            
+            const rulesList = document.getElementById('rulesList');
+            if (!rulesList) {
+                console.error('rulesList element not found!');
+                return;
+            }
+            
+            console.log('rulesList element found, clearing...');
+            rulesList.innerHTML = '';
+            
+            if (!rules || rules.length === 0) {
+                console.log('No rules to display');
+                rulesList.innerHTML = '<div style="padding: 20px; text-align: center; color: #999;">No hay reglas configuradas</div>';
+                return;
+            }
+            
+            console.log(`Rendering ${rules.length} rules...`);
+            rules.forEach((rule, index) => {
+                console.log(`Creating rule ${index}:`, rule.name);
+                const ruleCard = document.createElement('div');
+                ruleCard.className = 'rule-card';
+                ruleCard.innerHTML = `
+                    <div class="rule-info">
+                        <div class="rule-name">${rule.name}</div>
+                        <div class="rule-condition">${rule.description}</div>
+                        <div class="rule-tags">
+                            <span class="rule-tag">${rule.metric}</span>
+                            <span class="rule-tag">${rule.condition} ${rule.value}</span>
+                            <span class="rule-tag">${rule.severity}</span>
+                            ${rule.season !== 'all' ? `<span class="rule-tag">${rule.season === 'summer' ? 'Verano' : 'Invierno'}</span>` : ''}
+                        </div>
+                    </div>
+                    <div class="rule-controls">
+                        <label class="switch">
+                            <input type="checkbox" ${rule.active ? 'checked' : ''} onchange="toggleRule(${rule.id})">
+                            <span class="slider"></span>
+                        </label>
+                        <button class="btn btn-secondary" style="padding: 0.25rem 0.5rem;">Editar</button>
+                        <button class="btn btn-danger" style="padding: 0.25rem 0.5rem;" onclick="deleteRule(${rule.id})">Eliminar</button>
+                    </div>
+                `;
+                rulesList.appendChild(ruleCard);
+            });
+        }
+        
+        // Debug Rules Function
+        function debugRules() {
+            console.log('===== DEBUG RULES =====');
+            console.log('rules variable:', rules);
+            console.log('rules type:', typeof rules);
+            console.log('rules is array?:', Array.isArray(rules));
+            console.log('rules length:', rules ? rules.length : 'undefined');
+            console.log('defaultRules:', defaultRules);
+            console.log('defaultRules length:', defaultRules ? defaultRules.length : 'undefined');
+            
+            const rulesList = document.getElementById('rulesList');
+            console.log('rulesList element:', rulesList);
+            console.log('rulesList parent:', rulesList ? rulesList.parentElement : 'N/A');
+            console.log('rulesList innerHTML length:', rulesList ? rulesList.innerHTML.length : 'N/A');
+            console.log('rulesList children:', rulesList ? rulesList.children.length : 'N/A');
+            
+            alert(`Rules: ${rules ? rules.length : 'undefined'}\nCheck console for details`);
+            
+            // Try to render again
+            console.log('Attempting to render rules again...');
+            renderRules();
+        }
+        
+        // Show Store Details Modal
+        function showStoreDetails(store) {
+            const modal = document.getElementById('storeModal');
+            const modalTitle = document.getElementById('modalTitle');
+            const modalBody = document.getElementById('modalBody');
+            
+            // Store current store data globally
+            currentStoreData = store;
+            
+            modalTitle.textContent = `Tienda #${store.number}: ${store.name} - ${store.location}`;
+            
+            // Event History for the store
+            const eventHistory = [
+                { time: '11:45 AM', type: 'info', event: 'Cola alcanzó 15 personas, apertura de caja adicional' },
+                { time: '11:30 AM', type: 'warning', event: 'Temperatura subiendo: 24.8°C' },
+                { time: '10:15 AM', type: 'success', event: 'Mantenimiento preventivo POS-03 completado' },
+                { time: '09:45 AM', type: 'info', event: 'Pico de afluencia matutina: 85 clientes' },
+                { time: '09:00 AM', type: 'success', event: 'Apertura de tienda exitosa, todos los sistemas OK' },
+                { time: 'Ayer 8:30 PM', type: 'warning', event: 'Impresora POS-02 sin papel' },
+                { time: 'Ayer 7:00 PM', type: 'info', event: 'Hora pico vespertina: 95 clientes, 22 en cola' },
+                { time: 'Ayer 3:15 PM', type: 'critical', event: 'Falla temporal sistema de refrigeración' },
+            ];
+
+            // Get refrigerators for this store
+            const storeFridges = refrigerators ? refrigerators.filter(f => f.storeId === store.id) : [];
+            
+            const fridgesByCategory = {
+                frozen: storeFridges.filter(f => f.category === 'frozen'),
+                meat: storeFridges.filter(f => f.category === 'meat'),
+                dairy: storeFridges.filter(f => f.category === 'dairy'),
+                beverages: storeFridges.filter(f => f.category === 'beverages')
+            };
+            
+            // Generate refrigerator cards HTML
+            let fridgeCardsHTML = '';
+            
+            Object.entries(fridgesByCategory).forEach(([category, fridges]) => {
+                if (fridges.length === 0) return;
+                
+                const catInfo = fridgeCategories[category];
+                fridgeCardsHTML += `
+                    <div style="margin-bottom: 1.5rem;">
+                        <h4 style="margin-bottom: 0.75rem; color: #212121; display: flex; align-items: center; gap: 0.5rem;">
+                            <span style="font-size: 1.25rem;">${catInfo.icon}</span>
+                            ${catInfo.name} (${catInfo.tempMin}°C a ${catInfo.tempMax}°C)
+                        </h4>
+                        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 0.5rem;">
+                `;
+                
+                fridges.forEach(fridge => {
+                    const isOutOfRange = fridge.currentTemp < catInfo.tempMin || fridge.currentTemp > catInfo.tempMax;
+                    const bgColor = isOutOfRange ? 'var(--danger-bg)' : 
+                                   fridge.status === 'warning' ? 'var(--warning-bg)' : 
+                                   'var(--success-bg)';
+                    const borderColor = isOutOfRange ? 'var(--danger)' : 
+                                       fridge.status === 'warning' ? 'var(--warning)' : 
+                                       'var(--success)';
+                    const borderWidth = isOutOfRange ? '3px' : '2px';
+                    
+                    const statusIcon = isOutOfRange ? '🔴' : 
+                                     fridge.status === 'warning' ? '🟡' : '🟢';
+                    const statusText = isOutOfRange ? 'CRÍTICO' : 
+                                     fridge.status === 'warning' ? 'ALERTA' : 'OK';
+                    
+                    fridgeCardsHTML += `
+                        <div style="padding: 0.75rem; border: ${borderWidth} solid ${borderColor}; border-radius: 8px; background: ${bgColor}; ${isOutOfRange ? 'animation: criticalPulse 2s ease-in-out infinite;' : ''}">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                                <div style="font-weight: 600; font-size: 0.875rem;">${fridge.id.split('-')[1]}</div>
+                                <span style="font-size: 0.75rem;">${statusIcon}</span>
+                            </div>
+                            <div style="font-size: 1.5rem; font-weight: 700; color: ${borderColor}; margin-bottom: 0.25rem;">${fridge.currentTemp}°C</div>
+                            <div style="font-size: 0.75rem; color: #757575; margin-bottom: 0.25rem;">Objetivo: ${fridge.targetTemp}°C</div>
+                            <div style="font-size: 0.625rem; color: ${borderColor}; font-weight: 600; text-transform: uppercase;">${statusText}</div>
+                            <div style="font-size: 0.625rem; color: #9e9e9e; margin-top: 0.25rem;">${fridge.model}</div>
+                        </div>
+                    `;
+                });
+                
+                fridgeCardsHTML += `</div></div>`;
+            });
+            
+            // Clear modal body first
+            modalBody.innerHTML = '';
+            
+            // Show General tab as default
+            showStoreTab('overview');
+            
+            /* Remove old HTML generation - now handled by showStoreTab
+            modalBody.innerHTML = `
+                <!-- Tabs for different sections -->
+                <div style="display: flex; gap: 1rem; border-bottom: 2px solid #e0e0e0; margin-bottom: 1.5rem;">
+                    <button onclick="showStoreTab('overview', this)" class="store-tab active" style="padding: 0.75rem 1.5rem; border: none; background: none; font-weight: 600; color: var(--primary); border-bottom: 3px solid var(--primary); cursor: pointer;">General</button>
+                    <button onclick="showStoreTab('refrigerators', this)" class="store-tab" style="padding: 0.75rem 1.5rem; border: none; background: none; font-weight: 600; color: #757575; cursor: pointer;">Refrigeradores (${storeFridges.length})</button>
+                    <button onclick="showStoreTab('pos', this)" class="store-tab" style="padding: 0.75rem 1.5rem; border: none; background: none; font-weight: 600; color: #757575; cursor: pointer;">POS (${store.pos})</button>
+                    <button onclick="showStoreTab('history', this)" class="store-tab" style="padding: 0.75rem 1.5rem; border: none; background: none; font-weight: 600; color: #757575; cursor: pointer;">Historial</button>
+                </div>
+                
+                <!-- Overview Tab -->
+                <div id="store-overview" class="store-tab-content" style="display: block;">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-bottom: 2rem;">
+                        <div>
+                            <h3 style="margin-bottom: 1rem; color: #212121;">Estado General</h3>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                                <div style="padding: 1rem; background: #f8f9fa; border-radius: 8px; text-align: center;">
+                                    <div style="font-size: 1.5rem; font-weight: 700; color: ${storeFridges.filter(f => f.status !== 'ok').length > 0 ? '#FF9800' : '#4CAF50'};">🏪 ${storeFridges.length}</div>
+                                    <p style="margin: 0.5rem 0 0 0; color: #757575; font-size: 0.875rem;">Refrigeradores</p>
+                                    <p style="margin: 0.25rem 0 0 0; color: #212121; font-size: 0.75rem; font-weight: 600;">${storeFridges.filter(f => f.status === 'ok').length} activos / ${storeFridges.length} total</p>
+                                </div>
+                                <div style="padding: 1rem; background: #f8f9fa; border-radius: 8px; text-align: center;">
+                                    <div style="font-size: 1.5rem; font-weight: 700; color: ${store.status === 'critical' ? '#F44336' : '#2196F3'};">💻 ${store.pos}</div>
+                                    <p style="margin: 0.5rem 0 0 0; color: #757575; font-size: 0.875rem;">Puntos de Venta</p>
+                                    <p style="margin: 0.25rem 0 0 0; color: #212121; font-size: 0.75rem; font-weight: 600;">${store.pos - (store.status === 'critical' ? 1 : 0)} activos / ${store.pos} total</p>
+                                </div>
+                            </div>
+                        </div>
+                    <div>
+                        <h3 style="margin-bottom: 1rem; color: #212121;">Condiciones Ambientales</h3>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                            <div style="padding: 1rem; border: 1px solid #e0e0e0; border-radius: 8px;">
+                                <h4 style="margin: 0 0 0.5rem 0; color: #757575; font-size: 0.875rem;">TEMPERATURA</h4>
+                                <p style="margin: 0; font-size: 1.5rem; font-weight: 700;">${store.temp}°C</p>
+                                <p style="margin: 0.5rem 0 0 0; color: #757575; font-size: 0.75rem;">Óptimo: ${seasonalRules[currentSeason].temp.min}-${seasonalRules[currentSeason].temp.max}°C</p>
+                            </div>
+                            <div style="padding: 1rem; border: 1px solid #e0e0e0; border-radius: 8px;">
+                                <h4 style="margin: 0 0 0.5rem 0; color: #757575; font-size: 0.875rem;">HUMEDAD</h4>
+                                <p style="margin: 0; font-size: 1.5rem; font-weight: 700;">${store.humidity}%</p>
+                                <p style="margin: 0.5rem 0 0 0; color: #757575; font-size: 0.75rem;">Óptimo: ${seasonalRules[currentSeason].humidity.min}-${seasonalRules[currentSeason].humidity.max}%</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Summary Cards -->
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 0.75rem; margin-top: 1.5rem;">
+                        <div style="padding: 0.75rem; background: linear-gradient(135deg, #667eea, #764ba2); color: white; border-radius: 8px; text-align: center;">
+                            <div style="font-size: 1.25rem;">🧊</div>
+                            <div style="font-size: 0.75rem; opacity: 0.9;">Congelados</div>
+                            <div style="font-size: 1rem; font-weight: 700;">${fridgesByCategory.frozen.length}</div>
+                        </div>
+                        <div style="padding: 0.75rem; background: linear-gradient(135deg, #f093fb, #f5576c); color: white; border-radius: 8px; text-align: center;">
+                            <div style="font-size: 1.25rem;">🥩</div>
+                            <div style="font-size: 0.75rem; opacity: 0.9;">Carnes</div>
+                            <div style="font-size: 1rem; font-weight: 700;">${fridgesByCategory.meat.length}</div>
+                        </div>
+                        <div style="padding: 0.75rem; background: linear-gradient(135deg, #4facfe, #00f2fe); color: white; border-radius: 8px; text-align: center;">
+                            <div style="font-size: 1.25rem;">🧀</div>
+                            <div style="font-size: 0.75rem; opacity: 0.9;">Lácteos</div>
+                            <div style="font-size: 1rem; font-weight: 700;">${fridgesByCategory.dairy.length}</div>
+                        </div>
+                        <div style="padding: 0.75rem; background: linear-gradient(135deg, #fa709a, #fee140); color: white; border-radius: 8px; text-align: center;">
+                            <div style="font-size: 1.25rem;">🥤</div>
+                            <div style="font-size: 0.75rem; opacity: 0.9;">Bebidas</div>
+                            <div style="font-size: 1rem; font-weight: 700;">${fridgesByCategory.beverages.length}</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Refrigerators Tab -->
+                <div id="store-refrigerators" class="store-tab-content" style="display: none;">
+                    <h3 style="margin: 0 0 1rem 0; color: #212121;">Sistema de Refrigeración</h3>
+                    <div style="display: flex; gap: 1rem; margin-bottom: 1rem;">
+                        <span style="padding: 0.5rem 1rem; background: var(--success-bg); color: var(--success); border: 2px solid var(--success); border-radius: 6px; font-size: 0.875rem; font-weight: 700; text-transform: uppercase;">
+                            🟢 ${storeFridges.filter(f => f.status === 'ok').length} OK
+                        </span>
+                        <span style="padding: 0.5rem 1rem; background: var(--warning-bg); color: var(--warning); border: 2px solid var(--warning); border-radius: 6px; font-size: 0.875rem; font-weight: 700; text-transform: uppercase;">
+                            🟡 ${storeFridges.filter(f => f.status === 'warning').length} ALERTA
+                        </span>
+                    </div>
+                    ${fridgeCardsHTML || '<p style="padding: 2rem; text-align: center; color: #757575;">No hay información de refrigeradores disponible</p>'}
+                </div>
+                
+                <!-- POS Tab -->
+                <div id="store-pos" class="store-tab-content" style="display: none;">
+                    <h3 style="margin-bottom: 1rem; color: #212121;">Puntos de Venta</h3>
+                    ${posList.length > 0 ? posList.join('') : '<div style="padding: 2rem; text-align: center; color: #757575;">No hay información de POS disponible</div>'}
+                </div>
+                
+                <!-- History Tab -->
+                <div id="store-history" class="store-tab-content" style="display: none;">
+                    <h3 style="margin-bottom: 1rem; color: #212121;">Historial de Eventos (24h)</h3>
+                    <div style="max-height: 500px; overflow-y: auto; border: 1px solid #e0e0e0; border-radius: 8px; padding: 0.5rem;">
+                        ${eventHistory.map(evt => {
+                            const iconMap = {
+                                info: { icon: 'ℹ️', bg: 'rgba(139, 195, 74, 0.1)' },
+                                warning: { icon: '⚠️', bg: 'rgba(255, 152, 0, 0.1)' },
+                                critical: { icon: '🚨', bg: 'rgba(244, 67, 54, 0.1)' },
+                                success: { icon: '✅', bg: 'rgba(76, 175, 80, 0.1)' }
+                            };
+                            const style = iconMap[evt.type] || iconMap.info;
+                            
+                            return `
+                                <div style="display: flex; align-items: start; gap: 0.75rem; padding: 0.75rem; margin-bottom: 0.5rem; background: ${style.bg}; border-radius: 6px;">
+                                    <span style="font-size: 1.25rem;">${style.icon}</span>
+                                    <div style="flex: 1;">
+                                        <div style="font-size: 0.875rem; color: #212121;">${evt.event}</div>
+                                        <div style="font-size: 0.75rem; color: #757575; margin-top: 0.25rem;">${evt.time}</div>
+                                    </div>
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
+                </div>
+            `;
+            */
+            
+            modal.classList.add('active');
+            document.body.classList.add('modal-open');
+            
+            // Initialize affluence chart after modal is shown
+            setTimeout(() => {
+                initAffluenceChart(store.id);
+            }, 100);
+        }
+        
+        // Modal Functions
+        function closeModal() {
+            document.getElementById('storeModal').classList.remove('active');
+            document.body.classList.remove('modal-open');
+            // Destroy affluence chart when closing modal
+            if (affluenceChart) {
+                affluenceChart.destroy();
+                affluenceChart = null;
+            }
+        }
+        
+        // Global variable to store current store data
+        let currentStoreData = null;
+        
+        // Store Tab Functions - Working version
+        function showStoreTab(tabName, buttonElement) {
+            console.log('showStoreTab called with:', tabName);
+            
+            // Get modal body
+            const modalBody = document.getElementById('modalBody');
+            if (!modalBody) return;
+            
+            // Build tab content based on selection
+            let content = '';
+            
+            if (tabName === 'overview' && currentStoreData) {
+                const storeFridges = refrigerators ? refrigerators.filter(f => f.storeId === currentStoreData.id) : [];
+                
+                content = `
+                    <div style="display: flex; gap: 1rem; border-bottom: 2px solid #e0e0e0; margin-bottom: 1.5rem;">
+                        <button onclick="showStoreTab('overview', this)" class="store-tab active" style="padding: 0.75rem 1.5rem; border: none; background: none; font-weight: 600; color: var(--primary); border-bottom: 3px solid var(--primary); cursor: pointer;">General</button>
+                        <button onclick="showStoreTab('refrigerators', this)" class="store-tab" style="padding: 0.75rem 1.5rem; border: none; background: none; font-weight: 600; color: #757575; cursor: pointer;">Refrigeradores (${storeFridges.length})</button>
+                        <button onclick="showStoreTab('pos', this)" class="store-tab" style="padding: 0.75rem 1.5rem; border: none; background: none; font-weight: 600; color: #757575; cursor: pointer;">POS (${currentStoreData.pos})</button>
+                        <button onclick="showStoreTab('history', this)" class="store-tab" style="padding: 0.75rem 1.5rem; border: none; background: none; font-weight: 600; color: #757575; cursor: pointer;">Historial</button>
+                    </div>
+                    <div style="padding: 1rem;">
+                        <h3 style="margin: 0 0 1rem 0;">Estado General de la Tienda</h3>
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+                            <div style="padding: 1rem; background: #f8f9fa; border-radius: 8px; text-align: center;">
+                                <div style="font-size: 2rem;">❄️</div>
+                                <div style="font-size: 1.5rem; font-weight: 700; color: #212121;">${storeFridges.length}</div>
+                                <div style="color: #757575;">Refrigeradores</div>
+                                <div style="font-size: 0.875rem; color: ${storeFridges.filter(f => f.status !== 'ok').length > 0 ? '#FF9800' : '#4CAF50'};">
+                                    ${storeFridges.filter(f => f.status === 'ok').length} OK / ${storeFridges.filter(f => f.status !== 'ok').length} Alertas
+                                </div>
+                            </div>
+                            <div style="padding: 1rem; background: #f8f9fa; border-radius: 8px; text-align: center;">
+                                <div style="font-size: 2rem;">💻</div>
+                                <div style="font-size: 1.5rem; font-weight: 700; color: #212121;">${currentStoreData.pos}</div>
+                                <div style="color: #757575;">Puntos de Venta</div>
+                                <div style="font-size: 0.875rem; color: ${currentStoreData.status === 'critical' ? '#F44336' : '#4CAF50'};">
+                                    ${currentStoreData.pos - (currentStoreData.status === 'critical' ? 1 : 0)} Activos
+                                </div>
+                            </div>
+                            <div style="padding: 1rem; background: #f8f9fa; border-radius: 8px; text-align: center;">
+                                <div style="font-size: 2rem;">🌡️</div>
+                                <div style="font-size: 1.5rem; font-weight: 700; color: #212121;">${currentStoreData.temp}°C</div>
+                                <div style="color: #757575;">Temperatura</div>
+                                <div style="font-size: 0.875rem; color: #4CAF50;">Óptima</div>
+                            </div>
+                            <div style="padding: 1rem; background: #f8f9fa; border-radius: 8px; text-align: center;">
+                                <div style="font-size: 2rem;">💧</div>
+                                <div style="font-size: 1.5rem; font-weight: 700; color: #212121;">${currentStoreData.humidity}%</div>
+                                <div style="color: #757575;">Humedad</div>
+                                <div style="font-size: 0.875rem; color: #4CAF50;">Normal</div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            } else if (tabName === 'refrigerators' && currentStoreData) {
+                const storeFridges = refrigerators ? refrigerators.filter(f => f.storeId === currentStoreData.id) : [];
+                const fridgesByCategory = {
+                    frozen: storeFridges.filter(f => f.category === 'frozen'),
+                    meat: storeFridges.filter(f => f.category === 'meat'),
+                    dairy: storeFridges.filter(f => f.category === 'dairy'),
+                    beverages: storeFridges.filter(f => f.category === 'beverages')
+                };
+                
+                content = `
+                    <div style="display: flex; gap: 1rem; border-bottom: 2px solid #e0e0e0; margin-bottom: 1.5rem;">
+                        <button onclick="showStoreTab('overview', this)" class="store-tab" style="padding: 0.75rem 1.5rem; border: none; background: none; font-weight: 600; color: #757575; cursor: pointer;">General</button>
+                        <button onclick="showStoreTab('refrigerators', this)" class="store-tab active" style="padding: 0.75rem 1.5rem; border: none; background: none; font-weight: 600; color: var(--primary); border-bottom: 3px solid var(--primary); cursor: pointer;">Refrigeradores (${storeFridges.length})</button>
+                        <button onclick="showStoreTab('pos', this)" class="store-tab" style="padding: 0.75rem 1.5rem; border: none; background: none; font-weight: 600; color: #757575; cursor: pointer;">POS (${currentStoreData.pos})</button>
+                        <button onclick="showStoreTab('history', this)" class="store-tab" style="padding: 0.75rem 1.5rem; border: none; background: none; font-weight: 600; color: #757575; cursor: pointer;">Historial</button>
+                    </div>
+                    <div style="padding: 1rem;">
+                        <h3 style="margin: 0 0 1rem 0;">Sistema de Refrigeración</h3>
+                        <div style="display: flex; gap: 1rem; margin-bottom: 2rem;">
+                            <span style="padding: 0.5rem 1rem; background: var(--success-bg); color: var(--success); border: 2px solid var(--success); border-radius: 6px; font-weight: 700; text-transform: uppercase;">
+                                🟢 ${storeFridges.filter(f => f.status === 'ok').length} OPERATIVOS
+                            </span>
+                            <span style="padding: 0.5rem 1rem; background: var(--warning-bg); color: var(--warning); border: 2px solid var(--warning); border-radius: 6px; font-weight: 700; text-transform: uppercase;">
+                                🟡 ${storeFridges.filter(f => f.status === 'warning').length} CON ALERTAS
+                            </span>
+                        </div>
+                `;
+                
+                // Add refrigerator cards by category
+                Object.entries(fridgesByCategory).forEach(([category, fridges]) => {
+                    if (fridges.length === 0) return;
+                    
+                    const catInfo = fridgeCategories[category];
+                    content += `
+                        <div style="margin-bottom: 2rem;">
+                            <h4 style="margin-bottom: 1rem; color: #212121;">
+                                ${catInfo.icon} ${catInfo.name} (${catInfo.tempMin}°C a ${catInfo.tempMax}°C)
+                            </h4>
+                            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 0.75rem;">
+                    `;
+                    
+                    fridges.forEach(fridge => {
+                        const isOutOfRange = fridge.currentTemp < catInfo.tempMin || fridge.currentTemp > catInfo.tempMax;
+                        const bgColor = isOutOfRange ? 'rgba(244, 67, 54, 0.1)' : 'rgba(76, 175, 80, 0.05)';
+                        const textColor = isOutOfRange ? '#F44336' : '#212121';
+                        
+                        content += `
+                            <div style="padding: 0.75rem; border: 1px solid ${isOutOfRange ? '#F44336' : '#4CAF50'}; border-radius: 6px; background: ${bgColor}; text-align: center;">
+                                <div style="font-size: 0.75rem; color: #757575;">${fridge.id.split('-')[1]}</div>
+                                <div style="font-size: 1.5rem; font-weight: 700; color: ${textColor};">${fridge.currentTemp}°C</div>
+                                <div style="font-size: 0.625rem; color: #9e9e9e;">Objetivo: ${fridge.targetTemp}°C</div>
+                            </div>
+                        `;
+                    });
+                    
+                    content += '</div></div>';
+                });
+                
+                // Add temperature history chart
+                content += `
+                    <div style="margin-top: 3rem; border-top: 1px solid var(--gray-200); padding-top: 2rem;">
+                        <h4 style="margin-bottom: 1.5rem; color: var(--text-primary);">
+                            📊 Historial de Temperaturas (Últimos 7 días)
+                        </h4>
+                        <div style="height: 400px; position: relative; background: var(--surface); border-radius: 12px; padding: 1rem; box-shadow: var(--shadow-sm);">
+                            <canvas id="temperatureHistoryChart" style="width: 100%; height: 100%;"></canvas>
+                        </div>
+                        <div style="margin-top: 1rem; display: flex; flex-wrap: wrap; gap: 1rem; justify-content: center; font-size: 0.875rem;">
+                            <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                <div style="width: 12px; height: 12px; background: #1976D2; border-radius: 2px;"></div>
+                                <span>🧊 Congelados (-22°C a -18°C)</span>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                <div style="width: 12px; height: 12px; background: #D32F2F; border-radius: 2px;"></div>
+                                <span>🥩 Carnes (0°C a 4°C)</span>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                <div style="width: 12px; height: 12px; background: #388E3C; border-radius: 2px;"></div>
+                                <span>🧀 Lácteos (2°C a 6°C)</span>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                <div style="width: 12px; height: 12px; background: #F57C00; border-radius: 2px;"></div>
+                                <span>🥤 Bebidas (3°C a 7°C)</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                content += '</div>';
+            } else if (tabName === 'pos' && currentStoreData) {
+                content = `
+                    <div style="display: flex; gap: 1rem; border-bottom: 2px solid #e0e0e0; margin-bottom: 1.5rem;">
+                        <button onclick="showStoreTab('overview', this)" class="store-tab" style="padding: 0.75rem 1.5rem; border: none; background: none; font-weight: 600; color: #757575; cursor: pointer;">General</button>
+                        <button onclick="showStoreTab('refrigerators', this)" class="store-tab" style="padding: 0.75rem 1.5rem; border: none; background: none; font-weight: 600; color: #757575; cursor: pointer;">Refrigeradores</button>
+                        <button onclick="showStoreTab('pos', this)" class="store-tab active" style="padding: 0.75rem 1.5rem; border: none; background: none; font-weight: 600; color: var(--primary); border-bottom: 3px solid var(--primary); cursor: pointer;">POS</button>
+                        <button onclick="showStoreTab('history', this)" class="store-tab" style="padding: 0.75rem 1.5rem; border: none; background: none; font-weight: 600; color: #757575; cursor: pointer;">Historial</button>
+                    </div>
+                    <div style="padding: 1rem;">
+                        <h3 style="margin: 0 0 1.5rem 0;">Puntos de Venta e Impresoras</h3>
+                        
+                        <!-- Summary Cards -->
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
+                            <div style="padding: 1rem; background: rgba(76, 175, 80, 0.1); border-radius: 8px; text-align: center;">
+                                <div style="font-size: 1.5rem; font-weight: 700; color: #4CAF50;">${currentStoreData.pos - (currentStoreData.status === 'critical' ? 1 : 0)}/${currentStoreData.pos}</div>
+                                <div style="font-size: 0.875rem; color: #757575;">POS Activos</div>
+                            </div>
+                            <div style="padding: 1rem; background: rgba(33, 150, 243, 0.1); border-radius: 8px; text-align: center;">
+                                <div style="font-size: 1.5rem; font-weight: 700; color: #2196F3;">${currentStoreData.printers || currentStoreData.pos}</div>
+                                <div style="font-size: 0.875rem; color: #757575;">Impresoras Total</div>
+                            </div>
+                            <div style="padding: 1rem; background: rgba(255, 152, 0, 0.1); border-radius: 8px; text-align: center;">
+                                <div style="font-size: 1.5rem; font-weight: 700; color: #FF9800;">0</div>
+                                <div style="font-size: 0.875rem; color: #757575;">Alertas</div>
+                            </div>
+                        </div>
+                        
+                        <h4 style="margin: 0 0 1rem 0; color: #757575; font-size: 0.875rem; text-transform: uppercase;">Terminales y Dispositivos</h4>
+                `;
+                
+                for (let i = 1; i <= currentStoreData.pos; i++) {
+                    const isOffline = currentStoreData.status === 'critical' && i === currentStoreData.pos;
+                    const hasPrinterIssue = Math.random() > 0.9; // 10% chance of printer issue
+                    const printerStatus = isOffline ? 'offline' : (hasPrinterIssue ? 'warning' : 'ok');
+                    
+                    content += `
+                        <div style="border: 1px solid #e0e0e0; border-radius: 8px; margin-bottom: 1rem; overflow: hidden;">
+                            <!-- POS Header -->
+                            <div style="display: flex; justify-content: space-between; align-items: center; padding: 1rem; background: ${isOffline ? 'rgba(244, 67, 54, 0.05)' : 'white'};">
+                                <div style="display: flex; align-items: center; gap: 1rem;">
+                                    <div style="width: 48px; height: 48px; background: ${isOffline ? 'rgba(244, 67, 54, 0.1)' : 'rgba(76, 175, 80, 0.1)'}; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem;">
+                                        💻
+                                    </div>
+                                    <div>
+                                        <h4 style="margin: 0; font-weight: 600;">Terminal POS-${String(i).padStart(2, '0')}</h4>
+                                        <p style="margin: 0.25rem 0 0 0; color: #757575; font-size: 0.875rem;">
+                                            IP: 192.168.${currentStoreData.number}.${50 + i} | MAC: 00:1B:44:11:3A:${String(i).padStart(2, '0')}
+                                        </p>
+                                    </div>
+                                </div>
+                                <span style="padding: 0.5rem 1rem; background: ${isOffline ? 'rgba(244, 67, 54, 0.1)' : 'rgba(76, 175, 80, 0.1)'}; color: ${isOffline ? '#F44336' : '#4CAF50'}; border-radius: 6px; font-weight: 600;">
+                                    ${isOffline ? 'OFFLINE' : 'ONLINE'}
+                                </span>
+                            </div>
+                            
+                            <!-- Printer Info -->
+                            <div style="padding: 0.75rem 1rem; background: #f8f9fa; border-top: 1px solid #e0e0e0;">
+                                <div style="display: flex; justify-content: space-between; align-items: center;">
+                                    <div style="display: flex; align-items: center; gap: 0.75rem;">
+                                        <span style="font-size: 1.25rem;">🖨️</span>
+                                        <div>
+                                            <div style="font-size: 0.875rem; font-weight: 600;">Impresora Térmica EPSON TM-T88V</div>
+                                            <div style="font-size: 0.75rem; color: #757575;">Serial: EP${currentStoreData.number}${String(i).padStart(3, '0')}</div>
+                                        </div>
+                                    </div>
+                                    <div style="display: flex; align-items: center; gap: 1rem;">
+                                        ${printerStatus === 'ok' ? `
+                                            <span style="display: flex; align-items: center; gap: 0.5rem; padding: 0.25rem 0.75rem; background: rgba(76, 175, 80, 0.1); color: #4CAF50; border-radius: 4px; font-size: 0.75rem;">
+                                                <span style="font-size: 0.875rem;">📄</span> Papel OK
+                                            </span>
+                                            <span style="display: flex; align-items: center; gap: 0.5rem; padding: 0.25rem 0.75rem; background: rgba(76, 175, 80, 0.1); color: #4CAF50; border-radius: 4px; font-size: 0.75rem;">
+                                                <span style="font-size: 0.875rem;">✅</span> Conectada
+                                            </span>
+                                        ` : printerStatus === 'warning' ? `
+                                            <span style="display: flex; align-items: center; gap: 0.5rem; padding: 0.25rem 0.75rem; background: rgba(255, 152, 0, 0.1); color: #FF9800; border-radius: 4px; font-size: 0.75rem;">
+                                                <span style="font-size: 0.875rem;">📄</span> Papel Bajo
+                                            </span>
+                                            <span style="display: flex; align-items: center; gap: 0.5rem; padding: 0.25rem 0.75rem; background: rgba(76, 175, 80, 0.1); color: #4CAF50; border-radius: 4px; font-size: 0.75rem;">
+                                                <span style="font-size: 0.875rem;">✅</span> Conectada
+                                            </span>
+                                        ` : `
+                                            <span style="display: flex; align-items: center; gap: 0.5rem; padding: 0.25rem 0.75rem; background: rgba(244, 67, 54, 0.1); color: #F44336; border-radius: 4px; font-size: 0.75rem;">
+                                                <span style="font-size: 0.875rem;">❌</span> Sin Conexión
+                                            </span>
+                                        `}
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Additional devices (scanner, cash drawer) -->
+                            <div style="padding: 0.75rem 1rem; background: white; border-top: 1px solid #e0e0e0; display: flex; justify-content: space-between; font-size: 0.75rem; color: #757575;">
+                                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                    <span>📷</span> Scanner: ${isOffline ? 'Sin conexión' : 'Activo'}
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                    <span>💵</span> Gaveta: ${isOffline ? 'Sin conexión' : 'Operativa'}
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                    <span>💳</span> Pinpad: ${isOffline ? 'Sin conexión' : 'Conectado'}
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
+                
+                content += '</div>';
+            } else if (tabName === 'history') {
+                content = `
+                    <div style="display: flex; gap: 1rem; border-bottom: 2px solid #e0e0e0; margin-bottom: 1.5rem;">
+                        <button onclick="showStoreTab('overview', this)" class="store-tab" style="padding: 0.75rem 1.5rem; border: none; background: none; font-weight: 600; color: #757575; cursor: pointer;">General</button>
+                        <button onclick="showStoreTab('refrigerators', this)" class="store-tab" style="padding: 0.75rem 1.5rem; border: none; background: none; font-weight: 600; color: #757575; cursor: pointer;">Refrigeradores</button>
+                        <button onclick="showStoreTab('pos', this)" class="store-tab" style="padding: 0.75rem 1.5rem; border: none; background: none; font-weight: 600; color: #757575; cursor: pointer;">POS</button>
+                        <button onclick="showStoreTab('history', this)" class="store-tab active" style="padding: 0.75rem 1.5rem; border: none; background: none; font-weight: 600; color: var(--primary); border-bottom: 3px solid var(--primary); cursor: pointer;">Historial</button>
+                    </div>
+                    <div style="padding: 1rem;">
+                        <h3 style="margin: 0 0 1rem 0;">Historial de Eventos (24h)</h3>
+                        <div style="max-height: 400px; overflow-y: auto;">
+                            <div style="padding: 0.75rem; background: rgba(255, 152, 0, 0.1); margin-bottom: 0.5rem; border-radius: 6px;">
+                                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                    <span>⚠️</span>
+                                    <div style="flex: 1;">
+                                        <div style="font-size: 0.875rem;">Temperatura elevándose: 24.8°C</div>
+                                        <div style="font-size: 0.75rem; color: #757575; margin-top: 0.25rem;">11:30 AM</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div style="padding: 0.75rem; background: rgba(76, 175, 80, 0.1); margin-bottom: 0.5rem; border-radius: 6px;">
+                                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                    <span>✅</span>
+                                    <div style="flex: 1;">
+                                        <div style="font-size: 0.875rem;">Mantenimiento preventivo completado</div>
+                                        <div style="font-size: 0.75rem; color: #757575; margin-top: 0.25rem;">10:15 AM</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div style="padding: 0.75rem; background: rgba(139, 195, 74, 0.1); margin-bottom: 0.5rem; border-radius: 6px;">
+                                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                    <span>ℹ️</span>
+                                    <div style="flex: 1;">
+                                        <div style="font-size: 0.875rem;">Apertura de tienda exitosa</div>
+                                        <div style="font-size: 0.75rem; color: #757575; margin-top: 0.25rem;">9:00 AM</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            modalBody.innerHTML = content;
+            
+            // Initialize temperature history chart if it's the refrigerators tab
+            if (tabName === 'refrigerators' && currentStoreData) {
+                setTimeout(() => {
+                    initTemperatureHistoryChart(currentStoreData);
+                }, 100);
+            }
+        }
+        
+        // Rule Modal Functions
+        function showRuleModal() {
+            document.getElementById('ruleModal').classList.add('active');
+        }
+        
+        function closeRuleModal() {
+            document.getElementById('ruleModal').classList.remove('active');
+        }
+        
+        function saveRule() {
+            // You can implement rule saving logic here
+            console.log('Saving rule...');
+            showToast('Regla guardada correctamente', 'success');
+            closeRuleModal();
+        }
+        
+        function toggleRule(ruleId) {
+            const rule = rules.find(r => r.id === ruleId);
+            if (rule) {
+                rule.active = !rule.active;
+                console.log(`Rule ${ruleId} is now ${rule.active ? 'active' : 'inactive'}`);
+            }
+        }
+        
+        function deleteRule(ruleId) {
+            if (confirm('¿Está seguro de eliminar esta regla?')) {
+                rules = rules.filter(r => r.id !== ruleId);
+                renderRules();
+                showToast('Regla eliminada', 'warning');
+            }
+        }
+        
+        // Show Toast Notification
+        function showToast(message, type = 'info') {
+            const toastContainer = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = `toast toast-${type}`;
+            toast.innerHTML = `
+                <span>${type === 'success' ? '✅' : type === 'warning' ? '⚠️' : type === 'danger' ? '🚨' : 'ℹ️'}</span>
+                <span>${message}</span>
+            `;
+            toastContainer.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.style.animation = 'slideOut 0.3s ease';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+        
+        // Show Alert Details (placeholder)
+        function showAlertDetails() {
+            showToast('Funcionalidad en desarrollo', 'info');
+        }
+        
+        // Affluence Chart Functions
+        function generateAffluenceData(period) {
+            // Generate hourly pattern with realistic variations
+            const generateDayPattern = (baseMultiplier = 1, isWeekend = false) => {
+                const hours = [];
+                const inStore = [];
+                const inQueue = [];
+                
+                // Generate data for each hour from 7AM to 9PM
+                for (let h = 7; h <= 21; h++) {
+                    hours.push(h < 12 ? `${h}:00 AM` : h === 12 ? '12:00 PM' : `${h-12}:00 PM`);
+                    
+                    // Base pattern with peaks at 11AM, 1PM, and 6PM
+                    let baseStore = 30;
+                    let baseQueue = 5;
+                    
+                    if (h >= 10 && h <= 12) { // Morning peak
+                        baseStore = 85 + Math.random() * 15;
+                        baseQueue = 18 + Math.random() * 7;
+                    } else if (h >= 12 && h <= 14) { // Lunch peak
+                        baseStore = 92 + Math.random() * 10;
+                        baseQueue = 22 + Math.random() * 8;
+                    } else if (h >= 17 && h <= 19) { // Evening peak
+                        baseStore = 95 + Math.random() * 15;
+                        baseQueue = 25 + Math.random() * 10;
+                    } else if (h < 9 || h > 20) { // Early/late hours
+                        baseStore = 25 + Math.random() * 10;
+                        baseQueue = 3 + Math.random() * 3;
+                    } else { // Regular hours
+                        baseStore = 55 + Math.random() * 15;
+                        baseQueue = 10 + Math.random() * 5;
+                    }
+                    
+                    // Weekend adjustment
+                    if (isWeekend) {
+                        baseStore *= 1.2;
+                        baseQueue *= 1.3;
+                    }
+                    
+                    inStore.push(Math.round(baseStore * baseMultiplier));
+                    inQueue.push(Math.round(baseQueue * baseMultiplier));
+                }
+                
+                return { hours, inStore, inQueue };
+            };
+            
+            const data = {
+                today: (() => {
+                    const pattern = generateDayPattern();
+                    return {
+                        labels: pattern.hours,
+                        inStore: pattern.inStore,
+                        inQueue: pattern.inQueue
+                    };
+                })(),
+                
+                yesterday: (() => {
+                    const pattern = generateDayPattern(0.95);
+                    return {
+                        labels: pattern.hours,
+                        inStore: pattern.inStore,
+                        inQueue: pattern.inQueue
+                    };
+                })(),
+                
+                week: (() => {
+                    const days = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
+                    const labels = [];
+                    const inStore = [];
+                    const inQueue = [];
+                    
+                    days.forEach((day, index) => {
+                        const isWeekend = index >= 5;
+                        const dayPattern = generateDayPattern(1 + (index * 0.02), isWeekend);
+                        
+                        // Add key hours for each day
+                        [9, 11, 13, 15, 17, 19].forEach((hour, hourIndex) => {
+                            labels.push(`${day} ${hour}:00`);
+                            inStore.push(dayPattern.inStore[hour - 7]);
+                            inQueue.push(dayPattern.inQueue[hour - 7]);
+                        });
+                    });
+                    
+                    return { labels, inStore, inQueue };
+                })(),
+                
+                twoweeks: (() => {
+                    const labels = [];
+                    const inStore = [];
+                    const inQueue = [];
+                    const daysOfWeek = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+                    
+                    // Generate 14 days of hourly data
+                    for (let day = 0; day < 14; day++) {
+                        const date = new Date();
+                        date.setDate(date.getDate() - (13 - day));
+                        const dayName = daysOfWeek[date.getDay()];
+                        const dayNum = date.getDate();
+                        const isWeekend = date.getDay() === 0 || date.getDay() === 6;
+                        
+                        // Generate pattern for this day
+                        const dayPattern = generateDayPattern(0.9 + Math.random() * 0.2, isWeekend);
+                        
+                        // Sample key hours (every 3 hours)
+                        [7, 10, 13, 16, 19].forEach((hour) => {
+                            labels.push(`${dayName} ${dayNum} - ${hour}:00`);
+                            inStore.push(dayPattern.inStore[hour - 7]);
+                            inQueue.push(dayPattern.inQueue[hour - 7]);
+                        });
+                    }
+                    
+                    return { labels, inStore, inQueue };
+                })()
+            };
+            
+            return data[period] || data.today;
+        }
+        
+        function initAffluenceChart(storeId) {
+            const ctx = document.getElementById('affluenceChart');
+            if (!ctx) return;
+            
+            // Destroy existing chart if any
+            if (affluenceChart) {
+                affluenceChart.destroy();
+            }
+            
+            const data = generateAffluenceData('today');
+            
+            affluenceChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: data.labels,
+                    datasets: [
+                        {
+                            label: 'Clientes en Tienda',
+                            data: data.inStore,
+                            borderColor: 'var(--success)',
+                            backgroundColor: 'var(--success-bg)',
+                            tension: 0.4,
+                            fill: true
+                        },
+                        {
+                            label: 'En Cola de Pago',
+                            data: data.inQueue,
+                            borderColor: 'var(--warning)',
+                            backgroundColor: 'var(--warning-bg)',
+                            tension: 0.4,
+                            fill: true
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: {
+                        intersect: false,
+                        mode: 'index'
+                    },
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                            labels: {
+                                usePointStyle: true,
+                                padding: 15
+                            }
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                            padding: 12,
+                            callbacks: {
+                                label: function(context) {
+                                    return context.dataset.label + ': ' + context.parsed.y + ' personas';
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: {
+                                color: 'rgba(0, 0, 0, 0.05)'
+                            },
+                            ticks: {
+                                callback: function(value) {
+                                    return value + (value === 1 ? ' persona' : ' personas');
+                                }
+                            }
+                        },
+                        x: {
+                            grid: {
+                                display: false
+                            },
+                            ticks: {
+                                maxRotation: 45,
+                                minRotation: 45,
+                                autoSkip: true,
+                                maxTicksLimit: 20
+                            }
+                        }
+                    }
+                }
+            });
+            
+            // Update statistics based on data
+            updateAffluenceStatistics(data);
+        }
+        
+        function updateAffluenceChart(storeId, period) {
+            if (!affluenceChart) return;
+            
+            // Update filter buttons
+            document.querySelectorAll('.affluence-filter').forEach(btn => {
+                btn.classList.remove('active');
+                if (btn.dataset.filter === period) {
+                    btn.classList.add('active');
+                }
+            });
+            
+            const data = generateAffluenceData(period);
+            
+            // Update chart data
+            affluenceChart.data.labels = data.labels;
+            affluenceChart.data.datasets[0].data = data.inStore;
+            affluenceChart.data.datasets[1].data = data.inQueue;
+            affluenceChart.update();
+            
+            // Update statistics
+            updateAffluenceStatistics(data);
+        }
+        
+        function updateAffluenceStatistics(data) {
+            // Calculate peak hour
+            const maxIndex = data.inStore.indexOf(Math.max(...data.inStore));
+            const peakTime = data.labels[maxIndex];
+            document.getElementById('peakHour').textContent = peakTime;
+            
+            // Calculate average
+            const avg = Math.round(data.inStore.reduce((a, b) => a + b, 0) / data.inStore.length);
+            document.getElementById('avgAffluence').textContent = avg;
+            
+            // Calculate max queue
+            const maxQueue = Math.max(...data.inQueue);
+            document.getElementById('maxQueue').textContent = maxQueue;
+        }
+        
+        function showRuleModal() {
+            document.getElementById('ruleModal').classList.add('active');
+        }
+        
+        function closeRuleModal() {
+            document.getElementById('ruleModal').classList.remove('active');
+        }
+        
+        function saveRule() {
+            showToast('Regla guardada exitosamente', 'success');
+            closeRuleModal();
+            renderRules();
+        }
+        
+        function toggleRule(ruleId) {
+            const rule = rules.find(r => r.id === ruleId);
+            if (rule) {
+                rule.active = !rule.active;
+                showToast(`Regla ${rule.active ? 'activada' : 'desactivada'}`, 'success');
+            }
+        }
+        
+        function deleteRule(ruleId) {
+            if (confirm('¿Está seguro de eliminar esta regla?')) {
+                rules = rules.filter(r => r.id !== ruleId);
+                renderRules();
+                showToast('Regla eliminada', 'success');
+            }
+        }
+        
+        // Filter Functions
+        function filterStores(status, button) {
+            // Update active button
+            if (button) {
+                const buttons = document.querySelectorAll('.filter-btn');
+                buttons.forEach(btn => btn.classList.remove('active'));
+                button.classList.add('active');
+            }
+            
+            // Actually filter the stores
+            if (status === 'all') {
+                stores = [...storeData];
+            } else {
+                stores = storeData.filter(store => store.status === status);
+            }
+            renderStores();
+            showToast('Filtro aplicado: ' + status, 'success');
+        }
+        
+        function filterByRegion() {
+            const region = document.getElementById('regionSelect').value;
+            const regionNames = {
+                'all': 'Todas',
+                'superintendencia1': 'Superintendencia 1', 
+                'superintendencia2': 'Superintendencia 2'
+            };
+            showToast('Mostrando tiendas: ' + regionNames[region], 'success');
+        }
+        
+        // Show Toast
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = `toast toast-${type}`;
+            toast.innerHTML = `
+                <span>${type === 'success' ? '✅' : type === 'warning' ? '⚠️' : '🚨'}</span>
+                <span>${message}</span>
+            `;
+            container.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.remove();
+            }, 3000);
+        }
+        
+        // Helper Functions
+        function generateTimeLabels(count) {
+            const labels = [];
+            const now = new Date();
+            for (let i = count - 1; i >= 0; i--) {
+                const time = new Date(now - i * 5 * 60000);
+                labels.push(time.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }));
+            }
+            return labels;
+        }
+        
+        function generateTempData(baseTemp) {
+            return Array(12).fill(0).map(() => 
+                (baseTemp + (Math.random() - 0.5) * 2).toFixed(1)
+            );
+        }
+        
+        function generateHumidityData(baseHumidity) {
+            return Array(12).fill(0).map(() => 
+                Math.round(baseHumidity + (Math.random() - 0.5) * 10)
+            );
+        }
+        
+        function updateCharts() {
+            if (tempHumidityChart) {
+                const seasonRules = seasonalRules[currentSeason];
+                tempHumidityChart.data.datasets[0].data = generateTempData(seasonRules.temp.optimal);
+                tempHumidityChart.data.datasets[1].data = generateHumidityData(seasonRules.humidity.optimal);
+                tempHumidityChart.update();
+            }
+        }
+        
+        // Real-time updates
+        function startRealTimeUpdates() {
+            setInterval(() => {
+                stores.forEach(store => {
+                    // Small random variations
+                    const tempVariation = (Math.random() - 0.5) * 0.5;
+                    const humidityVariation = (Math.random() - 0.5) * 2;
+                    
+                    store.temp = parseFloat((store.temp + tempVariation).toFixed(1));
+                    store.humidity = Math.round(store.humidity + humidityVariation);
+                    
+                    // Keep within reasonable bounds
+                    const seasonRules = seasonalRules[currentSeason];
+                    if (store.temp < seasonRules.temp.min - 2) store.temp = seasonRules.temp.min - 1;
+                    if (store.temp > seasonRules.temp.max + 3) store.temp = seasonRules.temp.max + 2;
+                    if (store.humidity < seasonRules.humidity.min - 5) store.humidity = seasonRules.humidity.min - 3;
+                    if (store.humidity > seasonRules.humidity.max + 10) store.humidity = seasonRules.humidity.max + 8;
+                });
+                
+                updateStats();
+                updateCharts();
+            }, 5000);
+        }
+        
+        // Make functions globally accessible for onclick handlers
+        window.showStoreTab = showStoreTab;
+        window.showStoreDetails = showStoreDetails;
+        window.closeModal = closeModal;
+        window.filterStores = filterStores;
+        window.filterByRegion = filterByRegion;
+        window.handleRoleChange = handleRoleChange;
+        window.filterByStore = filterByStore;
+        window.updateAffluenceChart = updateAffluenceChart;
+        window.showRuleModal = showRuleModal;
+        window.closeRuleModal = closeRuleModal;
+        window.saveRule = saveRule;
+        window.toggleRule = toggleRule;
+        window.deleteRule = deleteRule;
+        window.initTemperatureHistoryChart = initTemperatureHistoryChart;
+        
+        // Initialize on load
+        window.addEventListener('load', function() {
+            init();
+        });
+        
+        // Close modal when clicking outside
+        window.addEventListener('click', function(event) {
+            const modals = document.querySelectorAll('.modal');
+            modals.forEach(modal => {
+                if (event.target === modal) {
+                    modal.classList.remove('active');
+                    document.body.classList.remove('modal-open');
+                    // Destroy affluence chart when closing modal
+                    if (affluenceChart) {
+                        affluenceChart.destroy();
+                        affluenceChart = null;
+                    }
+                }
+            });
+        });
+    </script>
+</body>
+</html>

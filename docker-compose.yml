@@ -1,0 +1,244 @@
+# StorePulse Development Environment
+# Full stack local development with all services
+
+version: '3.8'
+
+services:
+  # Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: storepulse-db
+    environment:
+      POSTGRES_USER: storepulse
+      POSTGRES_PASSWORD: dev_password
+      POSTGRES_DB: storepulse_dev
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./infrastructure/docker/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U storepulse"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Redis (for caching and sessions)
+  redis:
+    image: redis:7-alpine
+    container_name: storepulse-redis
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # API Service (Cloud Run equivalent)
+  api:
+    build:
+      context: ./services/api
+      dockerfile: Dockerfile
+      target: development
+    container_name: storepulse-api
+    environment:
+      - DATABASE_URL=postgresql://storepulse:dev_password@postgres:5432/storepulse_dev
+      - REDIS_URL=redis://redis:6379/0
+      - JWT_SECRET_KEY=dev-jwt-secret-key-change-in-production
+      - LOG_LEVEL=DEBUG
+      - PUBSUB_EMULATOR_HOST=pubsub-emulator:8085
+      - WHATSAPP_API_TOKEN=dev_whatsapp_token
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./services/api:/app
+      - /app/__pycache__
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      pubsub-emulator:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+  # Gateway Service (Edge simulation)
+  gateway:
+    build:
+      context: ./services/gateway
+      dockerfile: Dockerfile
+      target: development
+    container_name: storepulse-gateway
+    environment:
+      - CLOUD_API_URL=http://api:8080
+      - API_KEY=store_cliente1_T01_dev_api_key_12345
+      - SQLITE_PATH=/data/buffer.db
+      - SYNC_INTERVAL_SECONDS=30
+      - BATCH_SIZE=50
+      - STORE_ID=T01
+      - TENANT_ID=cliente1
+      - LOG_LEVEL=DEBUG
+    ports:
+      - "8081:8080"
+    volumes:
+      - ./services/gateway:/app
+      - gateway_data:/data
+      - /app/__pycache__
+    depends_on:
+      api:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+  # Cloud Functions Emulator
+  functions:
+    build:
+      context: ./services/functions
+      dockerfile: Dockerfile
+      target: development
+    container_name: storepulse-functions
+    environment:
+      - DATABASE_URL=postgresql://storepulse:dev_password@postgres:5432/storepulse_dev
+      - PUBSUB_EMULATOR_HOST=pubsub-emulator:8085
+      - WHATSAPP_API_TOKEN=dev_whatsapp_token
+      - PROJECT_ID=storepulse-dev
+    volumes:
+      - ./services/functions:/app
+    depends_on:
+      postgres:
+        condition: service_healthy
+      pubsub-emulator:
+        condition: service_started
+    restart: unless-stopped
+
+  # Pub/Sub Emulator
+  pubsub-emulator:
+    image: google/cloud-sdk:alpine
+    container_name: storepulse-pubsub
+    command: >
+      sh -c "
+        gcloud beta emulators pubsub start --host-port=0.0.0.0:8085 --project=storepulse-dev &
+        sleep 5 &&
+        python -c \"
+        from google.cloud import pubsub_v1
+        import os
+        os.environ['PUBSUB_EMULATOR_HOST'] = 'localhost:8085'
+        publisher = pubsub_v1.PublisherClient()
+        subscriber = pubsub_v1.SubscriberClient()
+        topic_path = publisher.topic_path('storepulse-dev', 'metrics-queue')
+        subscription_path = subscriber.subscription_path('storepulse-dev', 'process-metrics-sub')
+        try:
+            publisher.create_topic(request={'name': topic_path})
+            subscriber.create_subscription(request={'name': subscription_path, 'topic': topic_path})
+            print('Pub/Sub topic and subscription created')
+        except Exception as e:
+            print(f'Setup completed (topics may already exist): {e}')
+        \"
+        wait
+      "
+    ports:
+      - "8085:8085"
+    restart: unless-stopped
+
+  # Client Dashboard (React)
+  client-dashboard:
+    build:
+      context: ./frontend/client-dashboard
+      dockerfile: Dockerfile
+      target: development
+    container_name: storepulse-client-dashboard
+    environment:
+      - REACT_APP_API_URL=http://localhost:8080
+      - REACT_APP_TENANT_ID=cliente1
+      - CHOKIDAR_USEPOLLING=true
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend/client-dashboard/src:/app/src
+      - ./frontend/client-dashboard/public:/app/public
+      - /app/node_modules
+    stdin_open: true
+    tty: true
+    restart: unless-stopped
+
+  # Admin Dashboard (React)
+  admin-dashboard:
+    build:
+      context: ./frontend/admin-dashboard
+      dockerfile: Dockerfile
+      target: development
+    container_name: storepulse-admin-dashboard
+    environment:
+      - REACT_APP_API_URL=http://localhost:8080
+      - CHOKIDAR_USEPOLLING=true
+    ports:
+      - "3001:3000"
+    volumes:
+      - ./frontend/admin-dashboard/src:/app/src
+      - ./frontend/admin-dashboard/public:/app/public
+      - /app/node_modules
+    stdin_open: true
+    tty: true
+    restart: unless-stopped
+
+  # Monitoring Stack (Optional)
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: storepulse-prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=200h'
+      - '--web.enable-lifecycle'
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./infrastructure/docker/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: storepulse-grafana
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    ports:
+      - "3010:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./infrastructure/docker/grafana/dashboards:/etc/grafana/provisioning/dashboards
+      - ./infrastructure/docker/grafana/datasources:/etc/grafana/provisioning/datasources
+    depends_on:
+      - prometheus
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  gateway_data:
+    driver: local
+  prometheus_data:
+    driver: local
+  grafana_data:
+    driver: local
+
+networks:
+  default:
+    name: storepulse-network
